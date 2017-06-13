@@ -30,7 +30,7 @@ import org.w3c.dom.Text;
  * Created by Nicola on 08/06/2017.
  */
 
-public class FPLocateFragment extends Fragment implements View.OnClickListener, AdapterView.OnItemClickListener {
+public class FPLocateFragment extends Fragment implements AdapterView.OnItemClickListener {
     private static final String TAG = "FPLocateFragment";
 
     /*
@@ -41,7 +41,6 @@ public class FPLocateFragment extends Fragment implements View.OnClickListener, 
 
     //GUI elements
     private ViewGroup rootView; //to be inflated with this fragment xml
-    private CheckBox signalPowerNormalization;
     private ListView fingerprintsList;
     private View apFrame; //to be inflated with xml when a fingerprint is selected
 
@@ -71,40 +70,12 @@ public class FPLocateFragment extends Fragment implements View.OnClickListener, 
                              Bundle savedInstanceState) {
         rootView = (ViewGroup) inflater.inflate(R.layout.fragment_fp_locate, container, false);
 
-        signalPowerNormalization = (CheckBox) rootView.findViewById(R.id.signal_normalization);
-        signalPowerNormalization.setOnClickListener(this);
-
         fingerprintsList = (ListView) rootView.findViewById(R.id.fingerprints_list);
         fingerprintsList.setOnItemClickListener(this);
         //attach the header to the fingerprints list
         ViewGroup header = (ViewGroup) LayoutInflater.from(getContext()).inflate(R.layout.fingerprints_list_header, fingerprintsList, false);
         fingerprintsList.addHeaderView(header);
         return rootView;
-    }
-
-    @Override
-    public void onClick(View view){
-        /**
-         * handling signal power normalization checkbox: the checkbox state is sent to the
-         * fingerprinting service that is responsible for computing distances.
-         */
-        if(view.getId() == R.id.signal_normalization) {
-            //is the service is not bound, the choice cannot be transmitted, so: abort
-            if(mService == null) return;
-
-            boolean checked = signalPowerNormalization.isChecked();
-            Message msg;
-            if (checked) {
-                msg = Message.obtain(null, WifiFingerprintingService.MSG_SIGNAL_POWER_NORMALIZATION_ON);
-            } else {
-                msg = Message.obtain(null, WifiFingerprintingService.MSG_SIGNAL_POWER_NORMALIZATION_OFF);
-            }
-            try {
-                mService.send(msg);
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-        }
     }
 
     /**

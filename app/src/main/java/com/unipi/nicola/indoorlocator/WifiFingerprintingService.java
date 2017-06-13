@@ -8,6 +8,7 @@ import android.content.IntentFilter;
 import android.location.Location;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -25,9 +26,10 @@ import java.util.List;
 
 public class WifiFingerprintingService extends Service {
     static final String TAG = "FingerprintingService";
-    static final int MSG_STORE_FINGERPRINT =                1;
-    static final int MSG_SIGNAL_POWER_NORMALIZATION_ON =    2;
-    static final int MSG_SIGNAL_POWER_NORMALIZATION_OFF =   3;
+    static final int MSG_STORE_FINGERPRINT =                    1;
+    static final int MSG_SIGNAL_POWER_NORMALIZATION_CHANGED =   2;
+    static final int MSG_DISTANCE_THRESHOLD_CHANGED =           3;
+    static final int MSG_MIN_MATCHING_APS_CHANGED =             4;
 
     private WifiManager wifi;
 
@@ -41,6 +43,7 @@ public class WifiFingerprintingService extends Service {
     private Messenger mMessenger = new Messenger(new IncomingHandler());
 
     boolean signalPowerNormalization = false;
+    int minMatchingAPs = 1;
 
     public WifiFingerprintingService() {
     }
@@ -135,8 +138,8 @@ public class WifiFingerprintingService extends Service {
                 //the current wifi APs set that must be compared with the retrieved FPs in the DB
                 WifiFingerprint currentMeasure = new WifiFingerprint(apinfos, new Location("test"), "testRoom");
 
-                //search in DB fingerprints having at least 1 overlapping BSSID
-                List<WifiFingerprint> foundFP = dba.extractCommonFingerprints(currentMeasure, 1);
+                //search in DB fingerprints having at least "minMatchingAPs" overlapping BSSID
+                List<WifiFingerprint> foundFP = dba.extractCommonFingerprints(currentMeasure, minMatchingAPs);
 
                 FingerprintDistance stdEuclid = new FingerprintEuclidDistance(signalPowerNormalization);
 
@@ -164,22 +167,28 @@ public class WifiFingerprintingService extends Service {
     class IncomingHandler extends Handler {
         @Override
         public void handleMessage(Message msg) {
+            Bundle b;
             switch (msg.what) {
                 case MSG_STORE_FINGERPRINT:
                     storingCounter = 1;
                     Log.d(TAG, "Store fingerprint request received!");
                     break;
 
-                case MSG_SIGNAL_POWER_NORMALIZATION_ON:
-                    Log.d(TAG, "Signal power normalization turn-ON request received!");
-                    signalPowerNormalization = true;
-                    /*Bundle bundle = msg.getData();
-                    String hello = (String) bundle.get("hello");*/
+                case MSG_SIGNAL_POWER_NORMALIZATION_CHANGED:
+                    b = msg.getData();
+                    signalPowerNormalization = b.getBoolean("signal_normalization");
+                    if(signalPowerNormalization){
+                        Log.d(TAG, "Signal power normalization ON");
+                    } else {
+                        Log.d(TAG, "Signal power normalization OFF");
+
+                    }
                     break;
 
-                case MSG_SIGNAL_POWER_NORMALIZATION_OFF:
-                    Log.d(TAG, "Signal power normalization turn-OFF request received!");
-                    signalPowerNormalization = false;
+                case MSG_MIN_MATCHING_APS_CHANGED:
+                    b = msg.getData();
+                    minMatchingAPs = b.getInt("min_matching_aps");
+                    Log.d(TAG, "Minimum number of matching APs: "+minMatchingAPs);
                     break;
 
                 default:

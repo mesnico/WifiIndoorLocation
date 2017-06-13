@@ -4,8 +4,13 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.os.IBinder;
+import android.os.Message;
 import android.os.Messenger;
+import android.os.RemoteException;
+import android.preference.PreferenceActivity;
+import android.preference.PreferenceManager;
 import android.support.design.widget.TabLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -58,6 +63,7 @@ public class WifiLocatorActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d(TAG,"onCreate called!");
         setContentView(R.layout.activity_wifi_locator);
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -91,7 +97,6 @@ public class WifiLocatorActivity extends AppCompatActivity {
         bindService(new Intent(this, WifiFingerprintingService.class), mConnection,
                 Context.BIND_AUTO_CREATE);
 
-
     }
 
     @Override
@@ -116,10 +121,8 @@ public class WifiLocatorActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         if (id == R.id.action_settings) {
-            //show the Settings Activity passing it the messanger in order to communicate with the fingerprinting
-            //service, so that the service behavior is instantly modified
+            //show the Settings Activity
             Intent intent = new Intent(this, SettingsActivity.class);
-            intent.putExtra("mService", mService);
             startActivity(intent);
 
             return true;
@@ -179,6 +182,39 @@ public class WifiLocatorActivity extends AppCompatActivity {
         }
     }
 
+    private void updatePreferenceValues(){
+        if(mService == null) return;
+
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+        Message msg;
+        Bundle b;
+
+        //signal normalization preference
+        Boolean normalizeSignal = sharedPref.getBoolean(SettingsActivity.PREF_SIGNAL_NORMALIZATION_KEY, false);
+        msg = Message.obtain(null, WifiFingerprintingService.MSG_SIGNAL_POWER_NORMALIZATION_CHANGED);
+        b = new Bundle();
+        b.putBoolean("signal_normalization", normalizeSignal);
+        msg.setData(b);
+        try {
+            mService.send(msg);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+
+        //minimum number of matching APs
+        int minMatchingAPs = Integer.valueOf(sharedPref.getString(SettingsActivity.PREF_MINIMUM_MATCHING_APS_KEY, "1"));
+        msg = Message.obtain(null, WifiFingerprintingService.MSG_MIN_MATCHING_APS_CHANGED);
+        b = new Bundle();
+        b.putInt("min_matching_aps", minMatchingAPs);
+        msg.setData(b);
+        try {
+            mService.send(msg);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+
+    }
+
     /**
      * Class for interacting with the main interface of the service.
      */
@@ -195,6 +231,9 @@ public class WifiLocatorActivity extends AppCompatActivity {
                 b.putParcelable("mService", mService);
                 actualFragment.setArguments(b);
             }
+
+            // sends the values of the preferences to the fingerprinting service
+            updatePreferenceValues();
 
             mBound = true;
         }

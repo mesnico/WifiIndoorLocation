@@ -11,66 +11,27 @@
     tools:context="com.unipi.nicola.indoorlocator.WifiLocatorActivity">
 
     <LinearLayout
-        android:orientation="vertical"
+        android:orientation="horizontal"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:id="@+id/linearLayout10">
+        android:layout_marginTop="32dp"
+        android:layout_alignParentStart="true"
+        android:layout_weight="1"
+        android:id="@+id/knn_layout">
 
-        <CheckBox
-                android:text="Signal Pwr Normalization"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:id="@+id/signal_normalization"
-                android:layout_weight="1" />
+        <TextView
+            android:text="k-NN"
+            android:layout_width="67dp"
+            android:layout_height="wrap_content"
+            android:id="@+id/textView9" />
 
-        <LinearLayout
-            android:orientation="horizontal"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginTop="32dp"
-            android:layout_alignParentStart="true"
-            android:layout_weight="1">
-
-            <TextView
-                android:text="k-NN"
-                android:layout_width="67dp"
-                android:layout_height="wrap_content"
-                android:id="@+id/textView9" />
-
-            <SeekBar
-                style="@style/Widget.AppCompat.SeekBar.Discrete"
-                android:layout_width="276dp"
-                android:layout_height="wrap_content"
-                android:max="10"
-                android:progress="3"
-                android:id="@+id/knn" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:orientation="horizontal"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_weight="1">
-
-            <TextView
-                android:text="Distance Threshold"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/textView"
-                android:layout_weight="0.09" />
-
-            <EditText
-                android:layout_width="25dp"
-                android:inputType="numberDecimal"
-                android:ems="10"
-                android:id="@+id/distance_threshold"
-                android:layout_weight="1"
-                android:layout_height="wrap_content"
-                android:text="25" />
-
-        </LinearLayout>
+        <SeekBar
+            style="@style/Widget.AppCompat.SeekBar.Discrete"
+            android:layout_width="276dp"
+            android:layout_height="wrap_content"
+            android:max="10"
+            android:progress="3"
+            android:id="@+id/knn" />
 
     </LinearLayout>
 
@@ -78,7 +39,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="30dp"
-        android:layout_below="@+id/linearLayout10"
+        android:layout_below="@+id/knn_layout"
         android:layout_alignParentStart="true"
         android:id="@+id/fingerprints_list" />
 
@@ -94,10 +55,10 @@
             android:layout_height="wrap_content"
             android:text="Best Match: "
             android:id="@+id/editText6"
-            android:layout_weight="1" />
+            android:layout_weight="0.36" />
 
         <TextView
-            android:text="TextView"
+            android:text="NONE"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/best_match"
