@@ -33,11 +33,11 @@ import org.w3c.dom.Text;
 public class FPLocateFragment extends Fragment implements View.OnClickListener, AdapterView.OnItemClickListener {
     private static final String TAG = "FPLocateFragment";
 
-    //Messenger for communicating with the fingerprinting service
-    Messenger mService = null;
-
-    //Flag indicating whether we have called bind on the service
-    boolean mBound;
+    /*
+     * The messenger object that must be passed from the activity and that is needed in order for this fragment
+     * to communicate with the Fingerprinting Service
+     */
+    Messenger mService;
 
     //GUI elements
     private ViewGroup rootView; //to be inflated with this fragment xml
@@ -46,12 +46,14 @@ public class FPLocateFragment extends Fragment implements View.OnClickListener, 
     private View apFrame; //to be inflated with xml when a fingerprint is selected
 
     @Override
+    public void setArguments(Bundle b){
+        //get the messenger from the activity
+        mService = b.getParcelable("mService");
+    }
+
+    @Override
     public void onStart() {
         super.onStart();
-        // Bind to the fingerprinting service
-        getActivity().bindService(new Intent(getContext(), WifiFingerprintingService.class), mConnection,
-                Context.BIND_AUTO_CREATE);
-
         //Registers the broadcast receiver to receive notifications about new position estimation available
         getActivity().registerReceiver(locationEstimationAvailable, new IntentFilter(
                 IndoorLocatorApplication.LOCATION_ESTIMATION_READY));
@@ -61,7 +63,6 @@ public class FPLocateFragment extends Fragment implements View.OnClickListener, 
     public void onPause(){
         super.onPause();
         getActivity().unregisterReceiver(locationEstimationAvailable);
-        getActivity().unbindService(mConnection);
     }
 
 
@@ -81,27 +82,6 @@ public class FPLocateFragment extends Fragment implements View.OnClickListener, 
         return rootView;
     }
 
-    /**
-     * Class for interacting with the main interface of the service.
-     */
-    private ServiceConnection mConnection = new ServiceConnection() {
-        public void onServiceConnected(ComponentName className, IBinder service) {
-            // This is called when the connection with the service has been
-            // established, giving us the object we can use to
-            // interact with the service
-            mService = new Messenger(service);
-            mBound = true;
-        }
-
-        public void onServiceDisconnected(ComponentName className) {
-            // This is called when the connection with the service has been
-            // unexpectedly disconnected -- that is, its process crashed.
-            mService = null;
-            mBound = false;
-        }
-    };
-
-
     @Override
     public void onClick(View view){
         /**
@@ -109,6 +89,9 @@ public class FPLocateFragment extends Fragment implements View.OnClickListener, 
          * fingerprinting service that is responsible for computing distances.
          */
         if(view.getId() == R.id.signal_normalization) {
+            //is the service is not bound, the choice cannot be transmitted, so: abort
+            if(mService == null) return;
+
             boolean checked = signalPowerNormalization.isChecked();
             Message msg;
             if (checked) {

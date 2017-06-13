@@ -1,6 +1,11 @@
 package com.unipi.nicola.indoorlocator;
 
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
+import android.os.IBinder;
+import android.os.Messenger;
 import android.support.design.widget.TabLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -22,6 +27,15 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 public class WifiLocatorActivity extends AppCompatActivity {
+
+    //Messenger for communicating with the fingerprinting service
+    Messenger mService = null;
+
+    //The fragment actually shown
+    Fragment actualFragment = null;
+
+    //Flag indicating whether we have called bind on the service
+    boolean mBound;
 
     private final String TAG = "WifiLocatorActivity";
 
@@ -73,6 +87,17 @@ public class WifiLocatorActivity extends AppCompatActivity {
         startService(locatorService);
         Log.d(TAG, "Locator service should be started!");
 
+        // Bind to the fingerprinting service
+        bindService(new Intent(this, WifiFingerprintingService.class), mConnection,
+                Context.BIND_AUTO_CREATE);
+
+
+    }
+
+    @Override
+    public void onDestroy(){
+        super.onDestroy();
+        unbindService(mConnection);
     }
 
 
@@ -90,8 +115,13 @@ public class WifiLocatorActivity extends AppCompatActivity {
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            //show the Settings Activity passing it the messanger in order to communicate with the fingerprinting
+            //service, so that the service behavior is instantly modified
+            Intent intent = new Intent(this, SettingsActivity.class);
+            intent.putExtra("mService", mService);
+            startActivity(intent);
+
             return true;
         }
 
@@ -111,7 +141,6 @@ public class WifiLocatorActivity extends AppCompatActivity {
         @Override
         public Fragment getItem(int position) {
             // getItem is called to instantiate the fragment for the given page.
-            Fragment actualFragment = null;
             switch(position){
                 case 1:
                     actualFragment = new FPLocateFragment();
@@ -121,6 +150,12 @@ public class WifiLocatorActivity extends AppCompatActivity {
                     actualFragment = new FPStoreFragment();
                     break;
             }
+
+            //set the messenger object in the new shown fragment
+            Bundle b = new Bundle();
+            b.putParcelable("mService",mService);
+            actualFragment.setArguments(b);
+
             return actualFragment;
         }
 
@@ -143,4 +178,40 @@ public class WifiLocatorActivity extends AppCompatActivity {
             return null;
         }
     }
+
+    /**
+     * Class for interacting with the main interface of the service.
+     */
+    private ServiceConnection mConnection = new ServiceConnection() {
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            // This is called when the connection with the service has been
+            // established, giving us the object we can use to
+            // interact with the service
+            mService = new Messenger(service);
+
+            //set the messenger object in the current fragment
+            if(actualFragment != null) {
+                Bundle b = new Bundle();
+                b.putParcelable("mService", mService);
+                actualFragment.setArguments(b);
+            }
+
+            mBound = true;
+        }
+
+        public void onServiceDisconnected(ComponentName className) {
+            // This is called when the connection with the service has been
+            // unexpectedly disconnected -- that is, its process crashed.
+            mService = null;
+
+            //set the messenger object in the current fragment
+            if(actualFragment != null) {
+                Bundle b = new Bundle();
+                b.putParcelable("mService", mService);
+                actualFragment.setArguments(b);
+            }
+
+            mBound = false;
+        }
+    };
 }
