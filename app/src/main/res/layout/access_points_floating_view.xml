@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_centerVertical="true"
+    android:layout_centerHorizontal="true"
+    android:background="#BBD0BB">
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <TextView
+            android:text="TextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/apview_location_label"
+            android:layout_margin="10dp"
+            android:elevation="0dp"
+            android:layout_weight="1"
+            android:textStyle="bold" />
+
+        <Button
+            android:text="Close"
+            android:id="@+id/close_btn"
+            android:layout_weight="1"
+            android:layout_height="40dp"
+            android:layout_width="5dp"
+            android:layout_margin="10dp" />
+
+    </LinearLayout>
+
+    <ListView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/ap_list_view" />
+
+</LinearLayout>
