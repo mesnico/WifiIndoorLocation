@@ -30,9 +30,9 @@ import org.w3c.dom.Text;
  * Created by Nicola on 08/06/2017.
  */
 
-public class FPLocateFragment extends Fragment implements AdapterView.OnItemClickListener {
+public class FPLocateFragment extends Fragment implements View.OnClickListener, AdapterView.OnItemClickListener {
     private static final String TAG = "FPLocateFragment";
-
+    IndoorLocatorApplication app;
     /*
      * The messenger object that must be passed from the activity and that is needed in order for this fragment
      * to communicate with the Fingerprinting Service
@@ -56,6 +56,8 @@ public class FPLocateFragment extends Fragment implements AdapterView.OnItemClic
         //Registers the broadcast receiver to receive notifications about new position estimation available
         getActivity().registerReceiver(locationEstimationAvailable, new IntentFilter(
                 IndoorLocatorApplication.LOCATION_ESTIMATION_READY));
+
+        app = (IndoorLocatorApplication) getActivity().getApplication();
     }
 
     @Override
@@ -75,6 +77,10 @@ public class FPLocateFragment extends Fragment implements AdapterView.OnItemClic
         //attach the header to the fingerprints list
         ViewGroup header = (ViewGroup) LayoutInflater.from(getContext()).inflate(R.layout.fingerprints_list_header, fingerprintsList, false);
         fingerprintsList.addHeaderView(header);
+
+        Button showCurrentAps = (Button) rootView.findViewById(R.id.current_aps);
+        showCurrentAps.setOnClickListener(this);
+
         return rootView;
     }
 
@@ -85,41 +91,20 @@ public class FPLocateFragment extends Fragment implements AdapterView.OnItemClic
     @Override
     public void onItemClick(AdapterView<?> l, View v, int position, long id){
         Log.d(TAG,"Item clicked!");
-        //if an ap list was present, then remove it before creating the new one
-        if(apFrame != null){
-            rootView.removeView(apFrame);
-        }
+
         WifiFingerprint selectedFP = (WifiFingerprint) l.getItemAtPosition(position);
-        LayoutInflater inflater = LayoutInflater.from(getContext());
-        apFrame = inflater.inflate(R.layout.access_points_floating_view, rootView, false);
+        WifiLocatorActivity.showFingerprintApList(rootView, selectedFP);
+    }
 
-        //if the close button is clicked, then the apframe must be destroyed
-        Button closeBtn = (Button)apFrame.findViewById(R.id.close_btn);
-        closeBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.d(TAG, "AP frame close button clicked");
-                rootView.removeView(apFrame);
-            }
-        });
-        //get the text view to be filled with infos from the current selection
-        TextView apLocationLabel = (TextView)apFrame.findViewById(R.id.apview_location_label);
-        apLocationLabel.setText(selectedFP.getLocationLabel());
-
-        //fill the list view with the access points of the selected fingerprint
-        AccessPointsListAdapter adapter = new AccessPointsListAdapter(
-                getActivity(),
-                selectedFP.getAccessPoints()
-        );
-        // attach the adapter to the ListView
-        ListView aplist = (ListView)apFrame.findViewById(R.id.ap_list_view);
-        aplist.setAdapter(adapter);
-
-        rootView.addView(apFrame);
+    @Override
+    public void onClick(View v){
+        //if the current APs button is pressed, then the access point floating view must be shown
+        if(v.getId() == R.id.current_aps){
+            WifiLocatorActivity.showFingerprintApList(rootView, app.getCurrentFingerprint());
+        }
     }
 
     private void updateFingerprintList() {
-        IndoorLocatorApplication app = (IndoorLocatorApplication) getActivity().getApplication();
         FingerprintsListAdapter adapter = new FingerprintsListAdapter(
                 getActivity(),
                 app.getkBestFingerprints()

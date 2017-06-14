@@ -136,7 +136,7 @@ public class WifiFingerprintingService extends Service {
                 }
 
                 //the current wifi APs set that must be compared with the retrieved FPs in the DB
-                WifiFingerprint currentMeasure = new WifiFingerprint(apinfos, new Location("test"), "testRoom");
+                WifiFingerprint currentMeasure = new WifiFingerprint(apinfos, new Location("test"), "Just here");
 
                 //search in DB fingerprints having at least "minMatchingAPs" overlapping BSSID
                 List<WifiFingerprint> foundFP = dba.extractCommonFingerprints(currentMeasure, minMatchingAPs);
@@ -148,6 +148,8 @@ public class WifiFingerprintingService extends Service {
 
                 IndoorLocatorApplication mApp = (IndoorLocatorApplication) getApplication();
                 mApp.setkBestFingerprints(orderedResults);
+                //set also the current sensed fingerprint
+                mApp.setCurrentFingerprint(currentMeasure);
 
 
                 //notifies the application so that it can retrieve the so built list of fingerprints

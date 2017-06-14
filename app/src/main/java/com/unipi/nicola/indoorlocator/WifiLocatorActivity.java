@@ -29,7 +29,11 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
+import android.widget.Button;
+import android.widget.ListView;
 import android.widget.TextView;
+
+import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprint;
 
 public class WifiLocatorActivity extends AppCompatActivity {
 
@@ -213,6 +217,43 @@ public class WifiLocatorActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
+    }
+
+    /**
+     * Static method used to display an access point list carried by a given wifi fingerprint
+     */
+    static View apFrame;
+    public static void showFingerprintApList(final ViewGroup parentView, WifiFingerprint fingerprint){
+
+        //if an ap list was present, then remove it before creating the new one
+        if(apFrame != null){
+            parentView.removeView(apFrame);
+        }
+        LayoutInflater inflater = LayoutInflater.from(parentView.getContext());
+        apFrame = inflater.inflate(R.layout.access_points_floating_view, parentView, false);
+
+        //if the close button is clicked, then the apframe must be destroyed
+        Button closeBtn = (Button)apFrame.findViewById(R.id.close_btn);
+        closeBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                parentView.removeView(apFrame);
+            }
+        });
+        //get the text view to be filled with infos from the current selection
+        TextView apLocationLabel = (TextView)apFrame.findViewById(R.id.apview_location_label);
+        apLocationLabel.setText(fingerprint.getLocationLabel());
+
+        //fill the list view with the access points of the selected fingerprint
+        AccessPointsListAdapter adapter = new AccessPointsListAdapter(
+                parentView.getContext(),
+                fingerprint.getAccessPoints()
+        );
+        // attach the adapter to the ListView
+        ListView apList = (ListView)apFrame.findViewById(R.id.ap_list_view);
+        apList.setAdapter(adapter);
+
+        parentView.addView(apFrame);
     }
 
     /**
