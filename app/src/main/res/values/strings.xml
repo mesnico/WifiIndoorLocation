@@ -12,8 +12,13 @@
         If ON, the non-linear decay of signal power is taken into consideration
     </string>
 
-    <string name="settings_distance_threshold">Distance Threshold</string>
+    <!-- Prefiltering strings !-->
+    <string name="prefiltering">Prefiltering</string>
+    <string name="settings_min_matching_aps">Min Matching APs</string>
 
-    <string name="min_matching_aps">Min Matching APs</string>
+    <!-- Similarity filtering strings-->
+    <string name="similarity_filtering">Similarity Filtering</string>
+    <string name="settings_distance_threshold">Distance Threshold</string>
+    <string name="settings_nearest_neighbors">Number of Nearest-Neighbors</string>
 
 </resources>

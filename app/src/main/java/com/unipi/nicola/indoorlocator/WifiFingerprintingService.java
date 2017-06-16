@@ -26,10 +26,12 @@ import java.util.List;
 
 public class WifiFingerprintingService extends Service {
     static final String TAG = "FingerprintingService";
+
+    //maximum number of returned fingerprints after ordering
+    static final int MAX_FINGERPRINTS = 10;
+
     static final int MSG_STORE_FINGERPRINT =                    1;
-    static final int MSG_SIGNAL_POWER_NORMALIZATION_CHANGED =   2;
-    static final int MSG_DISTANCE_THRESHOLD_CHANGED =           3;
-    static final int MSG_MIN_MATCHING_APS_CHANGED =             4;
+    static final int MSG_PARAMETERS_CHANGED =                    2;
 
     private WifiManager wifi;
 
@@ -44,6 +46,8 @@ public class WifiFingerprintingService extends Service {
 
     boolean signalPowerNormalization = false;
     int minMatchingAPs = 1;
+    int numberOfNearestNeighbors;
+    double maximumDistance;
 
     public WifiFingerprintingService() {
     }
@@ -142,15 +146,18 @@ public class WifiFingerprintingService extends Service {
                 List<WifiFingerprint> foundFP = dba.extractCommonFingerprints(currentMeasure, minMatchingAPs);
 
                 FingerprintDistance stdEuclid = new FingerprintEuclidDistance(signalPowerNormalization);
+                List<WifiFingerprint> orderedResults = stdEuclid.computeNearestFingerprints(foundFP,currentMeasure, MAX_FINGERPRINTS);
 
-                //TODO: the 5 should be a variable parameter set by the user
-                List<WifiFingerprint> orderedResults = stdEuclid.computeNearestFingerprints(foundFP,currentMeasure, 5);
+                //computes the centroid using a filtered set of fingerprints, in order to estimate the location
+                List<WifiFingerprint> filtered = stdEuclid.filterComputedNearestFingerprints(maximumDistance, numberOfNearestNeighbors);
+
+                //TODO: computeCentroid() and return the results to the activity
+                //Location = computeCentroid(filtered);
 
                 IndoorLocatorApplication mApp = (IndoorLocatorApplication) getApplication();
                 mApp.setkBestFingerprints(orderedResults);
                 //set also the current sensed fingerprint
                 mApp.setCurrentFingerprint(currentMeasure);
-
 
                 //notifies the application so that it can retrieve the so built list of fingerprints
                 Intent broadcastIntent = new Intent();
@@ -169,28 +176,28 @@ public class WifiFingerprintingService extends Service {
     class IncomingHandler extends Handler {
         @Override
         public void handleMessage(Message msg) {
-            Bundle b;
+            Bundle b = msg.getData();
             switch (msg.what) {
                 case MSG_STORE_FINGERPRINT:
                     storingCounter = 1;
                     Log.d(TAG, "Store fingerprint request received!");
                     break;
 
-                case MSG_SIGNAL_POWER_NORMALIZATION_CHANGED:
-                    b = msg.getData();
+                case MSG_PARAMETERS_CHANGED:
                     signalPowerNormalization = b.getBoolean("signal_normalization");
                     if(signalPowerNormalization){
                         Log.d(TAG, "Signal power normalization ON");
                     } else {
                         Log.d(TAG, "Signal power normalization OFF");
-
                     }
-                    break;
-
-                case MSG_MIN_MATCHING_APS_CHANGED:
-                    b = msg.getData();
                     minMatchingAPs = b.getInt("min_matching_aps");
                     Log.d(TAG, "Minimum number of matching APs: "+minMatchingAPs);
+
+                    numberOfNearestNeighbors = b.getInt("nn_number");
+                    Log.d(TAG, "Number of nearest neighbors: "+numberOfNearestNeighbors);
+
+                    maximumDistance = b.getDouble("distance_threshold");
+                    Log.d(TAG, "Maximum distance: "+maximumDistance);
                     break;
 
                 default:

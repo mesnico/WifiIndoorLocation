@@ -199,28 +199,29 @@ public class WifiLocatorActivity extends AppCompatActivity {
 
         //signal normalization preference
         Boolean normalizeSignal = sharedPref.getBoolean(SettingsActivity.PREF_SIGNAL_NORMALIZATION_KEY, false);
-        msg = Message.obtain(null, WifiFingerprintingService.MSG_SIGNAL_POWER_NORMALIZATION_CHANGED);
+        msg = Message.obtain(null, WifiFingerprintingService.MSG_PARAMETERS_CHANGED);
         b = new Bundle();
+
         b.putBoolean("signal_normalization", normalizeSignal);
-        msg.setData(b);
-        try {
-            mService.send(msg);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
 
-        //minimum number of matching APs
+        //minimum number of matching APs preference
         int minMatchingAPs = Integer.valueOf(sharedPref.getString(SettingsActivity.PREF_MINIMUM_MATCHING_APS_KEY, "1"));
-        msg = Message.obtain(null, WifiFingerprintingService.MSG_MIN_MATCHING_APS_CHANGED);
-        b = new Bundle();
         b.putInt("min_matching_aps", minMatchingAPs);
+
+        //distance threshold preference
+        double distanceThreshold = Double.valueOf(sharedPref.getString(SettingsActivity.PREF_DISTANCE_THRESHOLD_KEY, "10"));
+        b.putDouble("distance_threshold", distanceThreshold);
+
+        //number of nearest neighbors preference
+        int numberOfNearestNeighbors = Integer.valueOf(sharedPref.getString(SettingsActivity.PREF_NEAREST_NEIGHBORS_NUMBER_KEY, "3"));
+        b.putInt("nn_number", numberOfNearestNeighbors);
+
         msg.setData(b);
         try {
             mService.send(msg);
         } catch (RemoteException e) {
             e.printStackTrace();
         }
-
     }
 
     /**

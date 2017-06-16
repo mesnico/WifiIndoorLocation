@@ -5,20 +5,33 @@
         android:key="signal_normalization"
         android:summary="@string/settings_signal_normalization_details"
         android:title="@string/settings_signal_normalization" />
-    <EditTextPreference
-        android:defaultValue="40"
-        android:inputType="number"
-        android:selectAllOnFocus="true"
-        android:singleLine="true"
-        android:title="@string/settings_distance_threshold"
-        android:key="distance_threshold" />
-    <EditTextPreference
-        android:defaultValue="1"
-        android:inputType="number"
-        android:selectAllOnFocus="true"
-        android:singleLine="true"
-        android:title="@string/min_matching_aps"
-        android:key="min_matching_aps" />
+    <PreferenceCategory android:title="@string/prefiltering">
+
+        <EditTextPreference
+            android:defaultValue="1"
+            android:inputType="number"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/settings_min_matching_aps"
+            android:key="min_matching_aps" />
+    </PreferenceCategory>
+    <PreferenceCategory android:title="@string/similarity_filtering">
+
+        <EditTextPreference
+            android:defaultValue="40.0"
+            android:inputType="number"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/settings_distance_threshold"
+            android:key="distance_threshold" />
+        <EditTextPreference
+            android:defaultValue="4"
+            android:inputType="number"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/settings_nearest_neighbors"
+            android:key="nn_number" />
+    </PreferenceCategory>
 
     <!-- NOTE: EditTextPreference accepts EditText attributes. -->
     <!-- NOTE: EditTextPreference's summary should be set to its value by the activity code. -->

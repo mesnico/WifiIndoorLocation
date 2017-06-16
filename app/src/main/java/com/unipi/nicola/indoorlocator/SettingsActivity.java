@@ -33,6 +33,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     public static final String PREF_SIGNAL_NORMALIZATION_KEY = "signal_normalization";
     public static final String PREF_DISTANCE_THRESHOLD_KEY = "distance_threshold";
     public static final String PREF_MINIMUM_MATCHING_APS_KEY = "min_matching_aps";
+    public static final String PREF_NEAREST_NEIGHBORS_NUMBER_KEY = "nn_number";
     /**
      * A preference value change listener that updates the preference's summary
      * to reflect its new value.
@@ -134,6 +135,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             // guidelines.
             bindPreferenceSummaryToValue(findPreference(PREF_DISTANCE_THRESHOLD_KEY));
             bindPreferenceSummaryToValue(findPreference(PREF_MINIMUM_MATCHING_APS_KEY));
+            bindPreferenceSummaryToValue(findPreference(PREF_NEAREST_NEIGHBORS_NUMBER_KEY));
         }
 
         @Override

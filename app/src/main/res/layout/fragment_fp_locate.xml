@@ -16,37 +16,11 @@
         android:layout_height="wrap_content"
         android:id="@+id/current_aps" />
 
-    <LinearLayout
-        android:orientation="horizontal"
-        android:layout_below="@+id/current_aps"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:layout_alignParentStart="true"
-        android:layout_weight="1"
-        android:id="@+id/knn_layout">
-
-        <TextView
-            android:text="k-NN"
-            android:layout_width="67dp"
-            android:layout_height="wrap_content"
-            android:id="@+id/textView9" />
-
-        <SeekBar
-            style="@style/Widget.AppCompat.SeekBar.Discrete"
-            android:layout_width="276dp"
-            android:layout_height="wrap_content"
-            android:max="10"
-            android:progress="3"
-            android:id="@+id/knn" />
-
-    </LinearLayout>
-
     <ListView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="30dp"
-        android:layout_below="@+id/knn_layout"
+        android:layout_below="@+id/current_aps"
         android:layout_alignParentStart="true"
         android:id="@+id/fingerprints_list" />
 

@@ -6,7 +6,8 @@
     <TableRow
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="10dp">
+        android:id="@+id/fp_row"
+        android:padding="10dp">
 
         <TextView
             android:text="0"
