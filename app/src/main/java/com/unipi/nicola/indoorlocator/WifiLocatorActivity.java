@@ -1,15 +1,16 @@
 package com.unipi.nicola.indoorlocator;
 
+import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.graphics.Point;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
-import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.support.design.widget.TabLayout;
 import android.support.design.widget.FloatingActionButton;
@@ -23,6 +24,7 @@ import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -30,7 +32,9 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 
 import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprint;
@@ -222,38 +226,45 @@ public class WifiLocatorActivity extends AppCompatActivity {
     /**
      * Static method used to display an access point list carried by a given wifi fingerprint
      */
-    static View apFrame;
-    public static void showFingerprintApList(final ViewGroup parentView, WifiFingerprint fingerprint){
+    public static void showFingerprintApList(Activity context, View popupOriginator, Point offset, WifiFingerprint fingerprint){
+        View apPopup;
+        final PopupWindow pw;
 
-        //if an ap list was present, then remove it before creating the new one
-        if(apFrame != null){
-            parentView.removeView(apFrame);
-        }
-        LayoutInflater inflater = LayoutInflater.from(parentView.getContext());
-        apFrame = inflater.inflate(R.layout.access_points_floating_view, parentView, false);
+        LinearLayout parentView = (LinearLayout) context.findViewById(R.id.aps_popup);
+        LayoutInflater inflater = LayoutInflater.from(context);
+        apPopup = inflater.inflate(R.layout.access_points_popup_layout, parentView, false);
 
-        //if the close button is clicked, then the apframe must be destroyed
-        Button closeBtn = (Button)apFrame.findViewById(R.id.close_btn);
-        closeBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                parentView.removeView(apFrame);
-            }
-        });
         //get the text view to be filled with infos from the current selection
-        TextView apLocationLabel = (TextView)apFrame.findViewById(R.id.apview_location_label);
+        TextView apLocationLabel = (TextView)apPopup.findViewById(R.id.apview_location_label);
         apLocationLabel.setText(fingerprint.getLocationLabel());
 
         //fill the list view with the access points of the selected fingerprint
         AccessPointsListAdapter adapter = new AccessPointsListAdapter(
-                parentView.getContext(),
+                context,
                 fingerprint.getAccessPoints()
         );
         // attach the adapter to the ListView
-        ListView apList = (ListView)apFrame.findViewById(R.id.ap_list_view);
+        ListView apList = (ListView)apPopup.findViewById(R.id.ap_list_view);
         apList.setAdapter(adapter);
 
-        parentView.addView(apFrame);
+        // create the popup window
+        pw = new PopupWindow(apPopup, LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT, true);
+
+        // display the popup in the position of the popup originator
+        int[] location = new int[2];
+        popupOriginator.getLocationOnScreen(location);
+        pw.showAtLocation(apPopup, Gravity.NO_GRAVITY, location[0]+offset.x, location[1]+offset.y);
+
+        //if the close button is clicked, then the apPopup must be destroyed
+        Button closeBtn = (Button)apPopup.findViewById(R.id.close_btn);
+        closeBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                pw.dismiss();
+            }
+        });
+
     }
 
     /**

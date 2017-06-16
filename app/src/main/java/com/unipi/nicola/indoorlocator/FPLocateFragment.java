@@ -6,6 +6,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.graphics.Point;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Message;
@@ -42,7 +44,6 @@ public class FPLocateFragment extends Fragment implements View.OnClickListener, 
     //GUI elements
     private ViewGroup rootView; //to be inflated with this fragment xml
     private ListView fingerprintsList;
-    private View apFrame; //to be inflated with xml when a fingerprint is selected
 
     @Override
     public void setArguments(Bundle b){
@@ -91,16 +92,18 @@ public class FPLocateFragment extends Fragment implements View.OnClickListener, 
     @Override
     public void onItemClick(AdapterView<?> l, View v, int position, long id){
         Log.d(TAG,"Item clicked!");
+        //the list header should not be clicked
+        if(v.getId()==R.id.fp_list_header) return;
 
         WifiFingerprint selectedFP = (WifiFingerprint) l.getItemAtPosition(position);
-        WifiLocatorActivity.showFingerprintApList(rootView, selectedFP);
+        WifiLocatorActivity.showFingerprintApList(getActivity(), v, new Point(0,80), selectedFP);
     }
 
     @Override
     public void onClick(View v){
         //if the current APs button is pressed, then the access point floating view must be shown
         if(v.getId() == R.id.current_aps){
-            WifiLocatorActivity.showFingerprintApList(rootView, app.getCurrentFingerprint());
+            WifiLocatorActivity.showFingerprintApList(getActivity(), v, new Point(0,80), app.getCurrentFingerprint());
         }
     }
 
