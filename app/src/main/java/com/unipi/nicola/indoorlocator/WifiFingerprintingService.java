@@ -31,7 +31,8 @@ public class WifiFingerprintingService extends Service {
     static final int MAX_FINGERPRINTS = 10;
 
     static final int MSG_STORE_FINGERPRINT =                    1;
-    static final int MSG_PARAMETERS_CHANGED =                    2;
+    static final int MSG_PARAMETERS_CHANGED =                   2;
+    static final int MSG_LOCATE_ONOFF =                            3;
 
     private WifiManager wifi;
 
@@ -48,6 +49,7 @@ public class WifiFingerprintingService extends Service {
     int minMatchingAPs = 1;
     int numberOfNearestNeighbors;
     double maximumDistance;
+    boolean active = true;  //determine if the service is performing wifi scanning in order to estimate positions
 
     public WifiFingerprintingService() {
     }
@@ -60,10 +62,12 @@ public class WifiFingerprintingService extends Service {
                 WifiManager.WIFI_STATE_CHANGED_ACTION));
         this.registerReceiver(wifiScanAvailableReceiver, new IntentFilter(
                 WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+
+        //TODO: Does startScan() work also if wifi is not enabled? It would be nice
         wifi = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-        if (wifi.isWifiEnabled()) {
+        //if (wifi.isWifiEnabled()) {
             wifi.startScan();
-        }
+        //}
 
         dba = new WifiFingerprintDBAdapter(this);
         dba.open(true);
@@ -198,6 +202,19 @@ public class WifiFingerprintingService extends Service {
 
                     maximumDistance = b.getDouble("distance_threshold");
                     Log.d(TAG, "Maximum distance: "+maximumDistance);
+                    break;
+
+                case MSG_LOCATE_ONOFF:
+                    //if not active, unregister receiver so that wifi scan stops
+                    active = b.getBoolean("locate_onoff");
+                    if(active){
+                        getBaseContext().registerReceiver(wifiScanAvailableReceiver, new IntentFilter(
+                                WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+                        //TODO: if scan in a future will be timeout driven, then this must be changed
+                        wifi.startScan();
+                    } else {
+                        getBaseContext().unregisterReceiver(wifiScanAvailableReceiver);
+                    }
                     break;
 
                 default:

@@ -28,7 +28,7 @@
             android:layout_alignBottom="@+id/button">
 
             <TextView
-                android:text="# storing samples"
+                android:text="Store iterations"
                 android:layout_width="133dp"
                 android:layout_height="wrap_content"
                 android:id="@+id/textView7"
@@ -38,7 +38,7 @@
             <SeekBar
                 style="@style/Widget.AppCompat.SeekBar.Discrete"
                 android:layout_height="wrap_content"
-                android:max="7"
+                android:max="5"
                 android:progress="1"
                 android:id="@+id/seekBar"
                 android:layout_width="match_parent" />
@@ -78,12 +78,28 @@
         android:layout_alignParentStart="true"
         android:id="@+id/linearLayout4">
 
-        <CheckBox
-            android:text="Use GPS"
+        <LinearLayout
+            android:orientation="horizontal"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:id="@+id/checkBox"
-            android:layout_weight="1" />
+            android:layout_weight="1">
+
+            <CheckBox
+                android:text="Use GPS"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:id="@+id/gps_on"
+                android:layout_weight="1" />
+
+            <EditText
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textPersonName"
+                android:text="Accuracy: "
+                android:ems="10"
+                android:id="@+id/gps_accuracy"
+                android:layout_weight="1" />
+        </LinearLayout>
 
         <LinearLayout
             android:orientation="horizontal"

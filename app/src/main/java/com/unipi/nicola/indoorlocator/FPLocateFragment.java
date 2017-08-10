@@ -21,7 +21,9 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.ListView;
+import android.widget.Switch;
 import android.widget.TextView;
 
 import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprint;
@@ -32,7 +34,7 @@ import org.w3c.dom.Text;
  * Created by Nicola on 08/06/2017.
  */
 
-public class FPLocateFragment extends Fragment implements View.OnClickListener, AdapterView.OnItemClickListener {
+public class FPLocateFragment extends Fragment implements View.OnClickListener, CompoundButton.OnCheckedChangeListener, AdapterView.OnItemClickListener {
     private static final String TAG = "FPLocateFragment";
     IndoorLocatorApplication app;
     /*
@@ -82,6 +84,9 @@ public class FPLocateFragment extends Fragment implements View.OnClickListener, 
         Button showCurrentAps = (Button) rootView.findViewById(R.id.current_aps);
         showCurrentAps.setOnClickListener(this);
 
+        Switch locationServiceOn = (Switch) rootView.findViewById(R.id.locate_service_on);
+        locationServiceOn.setOnCheckedChangeListener(this);
+
         return rootView;
     }
 
@@ -104,6 +109,25 @@ public class FPLocateFragment extends Fragment implements View.OnClickListener, 
         //if the current APs button is pressed, then the access point floating view must be shown
         if(v.getId() == R.id.current_aps){
             WifiLocatorActivity.showFingerprintApList(getActivity(), v, new Point(0,80), app.getCurrentFingerprint());
+        }
+    }
+
+    @Override
+    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked){
+        if(isChecked){
+            Log.d(TAG, "Location service ON!");
+        } else {
+            Log.d(TAG, "Location service OFF!");
+        }
+
+        Message msg = Message.obtain(null, WifiFingerprintingService.MSG_LOCATE_ONOFF);
+        Bundle b = new Bundle();
+        b.putBoolean("locate_onoff", isChecked);
+        msg.setData(b);
+        try {
+            mService.send(msg);
+        } catch (RemoteException e) {
+            e.printStackTrace();
         }
     }
 

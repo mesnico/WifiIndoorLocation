@@ -10,17 +10,35 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.unipi.nicola.indoorlocator.WifiLocatorActivity">
 
-    <Button
-        android:text="Show Current APs"
-        android:layout_width="wrap_content"
+    <RelativeLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/current_aps" />
+        android:id="@+id/locate_frag_head">
+
+        <Button
+            android:text="Show Current APs"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/current_aps" />
+
+        <Switch
+            android:text="Locate ON"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/locate_service_on"
+            android:layout_weight="1"
+            android:layout_marginStart="40dp"
+            android:layout_centerVertical="true"
+            android:layout_toEndOf="@+id/current_aps"
+            android:checked="true" />
+
+    </RelativeLayout>
 
     <ListView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="30dp"
-        android:layout_below="@+id/current_aps"
+        android:layout_below="@+id/locate_frag_head"
         android:layout_alignParentStart="true"
         android:id="@+id/fingerprints_list" />
 

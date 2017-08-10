@@ -52,7 +52,6 @@ public class FingerprintsListAdapter extends ArrayAdapter<WifiFingerprint> {
         TextView rank = (TextView) convertView.findViewById(R.id.fp_rank);
 
         //if this fingerprint is out of range, change the visual appearance
-        Log.d("test","------------------"+position+" vs "+numberOfNearestNeighbors+"---------------------"+fingerprint.getDistance()+" vs "+distanceThreshold);
         TableRow row = (TableRow)convertView.findViewById(R.id.fp_row);
         if(position + 1 > numberOfNearestNeighbors || fingerprint.getDistance() > distanceThreshold){
             row.setBackgroundColor(Color.parseColor("#ffcc99"));
