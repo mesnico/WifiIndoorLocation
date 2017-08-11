@@ -64,8 +64,8 @@ public class FPLocateFragment extends Fragment implements View.OnClickListener, 
     }
 
     @Override
-    public void onPause(){
-        super.onPause();
+    public void onStop(){
+        super.onStop();
         getActivity().unregisterReceiver(locationEstimationAvailable);
     }
 

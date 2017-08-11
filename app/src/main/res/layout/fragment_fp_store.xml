@@ -21,33 +21,6 @@
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="match_parent"
-            android:layout_height="31dp"
-            android:layout_alignParentStart="true"
-            android:layout_toStartOf="@+id/button"
-            android:layout_alignTop="@+id/button"
-            android:layout_alignBottom="@+id/button">
-
-            <TextView
-                android:text="Store iterations"
-                android:layout_width="133dp"
-                android:layout_height="wrap_content"
-                android:id="@+id/textView7"
-                android:layout_alignBottom="@+id/editText4"
-                android:layout_centerHorizontal="true" />
-
-            <SeekBar
-                style="@style/Widget.AppCompat.SeekBar.Discrete"
-                android:layout_height="wrap_content"
-                android:max="5"
-                android:progress="1"
-                android:id="@+id/seekBar"
-                android:layout_width="match_parent" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:orientation="horizontal"
-            android:layout_width="match_parent"
             android:layout_height="match_parent">
 
             <TextView
@@ -86,20 +59,25 @@
 
             <CheckBox
                 android:text="Use GPS"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:id="@+id/gps_on"
                 android:layout_weight="1" />
 
-            <EditText
-                android:layout_width="match_parent"
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:inputType="textPersonName"
-                android:text="Accuracy: "
-                android:ems="10"
                 android:id="@+id/gps_accuracy"
                 android:layout_weight="1" />
+
         </LinearLayout>
+
+        <Button
+            android:text="pick location"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:id="@+id/pick_location" />
 
         <LinearLayout
             android:orientation="horizontal"
@@ -118,7 +96,8 @@
                 android:layout_height="wrap_content"
                 android:inputType="numberDecimal"
                 android:ems="10"
-                android:id="@+id/editText" />
+                android:id="@+id/latitude"
+                android:enabled="false" />
 
         </LinearLayout>
 
@@ -139,7 +118,8 @@
                 android:layout_height="wrap_content"
                 android:inputType="numberDecimal"
                 android:ems="10"
-                android:id="@+id/editText2"/>
+                android:id="@+id/longitude"
+                android:enabled="false" />
         </LinearLayout>
 
         <LinearLayout
@@ -149,7 +129,7 @@
             android:layout_weight="1">
 
             <TextView
-                android:text="Altitude"
+                android:text="Altitude (m)"
                 android:layout_width="100dp"
                 android:layout_height="wrap_content"
                 android:id="@+id/textView5"/>
@@ -159,7 +139,7 @@
                 android:layout_height="wrap_content"
                 android:inputType="numberDecimal"
                 android:ems="10"
-                android:id="@+id/editText3"/>
+                android:id="@+id/altitude"/>
         </LinearLayout>
 
     </LinearLayout>
