@@ -18,6 +18,7 @@ import android.util.Log;
 import com.unipi.nicola.indoorlocator.fingerprinting.AccessPointInfos;
 import com.unipi.nicola.indoorlocator.fingerprinting.FingerprintDistance;
 import com.unipi.nicola.indoorlocator.fingerprinting.FingerprintEuclidDistance;
+import com.unipi.nicola.indoorlocator.fingerprinting.WifiAPsAggregator;
 import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprint;
 import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprintDBAdapter;
 
@@ -40,7 +41,7 @@ public class WifiFingerprintingService extends Service {
     private WifiFingerprintDBAdapter dba;
 
     //counts how many samples need to be acquired when a storing request is received
-    int storingCounter = 0;
+    int storingCounter = -1;
 
     //The messenger object that must be passed to the activity in order to contact this service
     private Messenger mMessenger = new Messenger(new IncomingHandler());
@@ -50,6 +51,10 @@ public class WifiFingerprintingService extends Service {
     int numberOfNearestNeighbors;
     double maximumDistance;
     boolean active = true;  //determine if the service is performing wifi scanning in order to estimate positions
+
+    WifiAPsAggregator aggregator;
+    Location currentLocation;
+    String currentLocationLabel;
 
     public WifiFingerprintingService() {
     }
@@ -124,24 +129,44 @@ public class WifiFingerprintingService extends Service {
         @Override
         public void onReceive(final Context context, final Intent intent) {
             Log.i(TAG,"------------------- New scan finished");
+
+            //creates a list of accesspointinfos from the list of scanresults.
+            List<AccessPointInfos> apinfos = new ArrayList<>();
+            for(ScanResult s : wifi.getScanResults()){
+                apinfos.add(new AccessPointInfos(
+                        s.level,
+                        s.BSSID,
+                        s.SSID
+                ));
+            }
+
+            //if storingCounter is 0, then we accumulated enough scans; the resulting aggregated APs
+            //can be stored in the database
+            if(storingCounter == 0){
+                WifiFingerprint aggregatedFP = new WifiFingerprint(
+                        aggregator.returnAggregatedAPs(), currentLocation, currentLocationLabel);
+                dba.insertFingerprint(aggregatedFP);
+                //if initially, before the storing procedure, the service was inactive, then I deregister again the
+                //wifi scan receiver
+                if(!active) {
+                    getBaseContext().unregisterReceiver(wifiScanAvailableReceiver);
+                }
+                Log.d(TAG, "new fingerprint stored! LocationLabel: "+currentLocationLabel);
+                storingCounter = -1;
+            }
+
             if(storingCounter>0){
                 /* we are in storing mode, so this beacons must be elaborated and then put into the
                  * database
                  */
+                aggregator.insertMeasurement(apinfos);
+                Log.d(TAG, storingCounter + " iterations left for storing "+currentLocationLabel);
+                storingCounter--;
+
             } else {
                 /* matching mode: the APs sensed must be matched against fingerprints found in the
                  * database
                  */
-
-                //creates a list of accesspointinfos from the list of scanresults.
-                List<AccessPointInfos> apinfos = new ArrayList<>();
-                for(ScanResult s : wifi.getScanResults()){
-                    apinfos.add(new AccessPointInfos(
-                            s.level,
-                            s.BSSID,
-                            s.SSID
-                    ));
-                }
 
                 //the current wifi APs set that must be compared with the retrieved FPs in the DB
                 WifiFingerprint currentMeasure = new WifiFingerprint(apinfos, new Location("test"), "Just here");
@@ -183,7 +208,17 @@ public class WifiFingerprintingService extends Service {
             Bundle b = msg.getData();
             switch (msg.what) {
                 case MSG_STORE_FINGERPRINT:
+                    //initialize the counter and the new aggregator
                     storingCounter = 1;
+                    aggregator = new WifiAPsAggregator();
+                    //receive the current location
+                    currentLocation = b.getParcelable("current_location");
+                    currentLocationLabel = b.getString("current_location_label");
+                    //enable wifi scan even if the user turned off the locating service
+                    if(!active){
+                        getBaseContext().registerReceiver(wifiScanAvailableReceiver, new IntentFilter(
+                                WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+                    }
                     Log.d(TAG, "Store fingerprint request received!");
                     break;
 

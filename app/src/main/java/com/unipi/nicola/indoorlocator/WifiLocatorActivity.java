@@ -1,12 +1,16 @@
 package com.unipi.nicola.indoorlocator;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.graphics.Point;
+import android.location.LocationManager;
+import android.net.wifi.WifiManager;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
@@ -105,6 +109,30 @@ public class WifiLocatorActivity extends AppCompatActivity {
         bindService(new Intent(this, WifiFingerprintingService.class), mConnection,
                 Context.BIND_AUTO_CREATE);
 
+        //If wifi disabled, ask the user if it can be enabled
+        final WifiManager manager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+        if (!manager.isWifiEnabled()) {
+            buildAlertMessageNoWifi();
+        }
+    }
+
+    private void buildAlertMessageNoWifi() {
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("Wifi is needed for this application to work. Do you want to enable it?")
+                .setCancelable(false)
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    public void onClick(final DialogInterface dialog, final int id) {
+                        WifiManager wifiManager = (WifiManager)getSystemService(Context.WIFI_SERVICE);
+                        wifiManager.setWifiEnabled(true);
+                    }
+                })
+                .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                    public void onClick(final DialogInterface dialog, final int id) {
+                        dialog.cancel();
+                    }
+                });
+        final AlertDialog alert = builder.create();
+        alert.show();
     }
 
     @Override
