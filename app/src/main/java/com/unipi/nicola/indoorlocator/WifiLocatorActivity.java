@@ -141,6 +141,14 @@ public class WifiLocatorActivity extends AppCompatActivity {
         unbindService(mConnection);
     }
 
+    @Override
+    public void onResume(){
+        super.onResume();
+        if(mBound){
+            updatePreferenceValues();
+        }
+    }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -227,6 +235,8 @@ public class WifiLocatorActivity extends AppCompatActivity {
         Message msg;
         Bundle b;
 
+        //matching preferences
+
         //signal normalization preference
         Boolean normalizeSignal = sharedPref.getBoolean(SettingsActivity.PREF_SIGNAL_NORMALIZATION_KEY, false);
         msg = Message.obtain(null, WifiFingerprintingService.MSG_PARAMETERS_CHANGED);
@@ -245,6 +255,10 @@ public class WifiLocatorActivity extends AppCompatActivity {
         //number of nearest neighbors preference
         int numberOfNearestNeighbors = Integer.valueOf(sharedPref.getString(SettingsActivity.PREF_NEAREST_NEIGHBORS_NUMBER_KEY, "3"));
         b.putInt("nn_number", numberOfNearestNeighbors);
+
+        //storing preferences
+        int storingIterations = Integer.valueOf(sharedPref.getString(SettingsActivity.PREF_STORING_ITERATIONS_KEY, "4"));
+        b.putInt("storing_iterations", storingIterations);
 
         msg.setData(b);
         try {

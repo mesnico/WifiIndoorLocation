@@ -156,6 +156,7 @@ public class WifiFingerprintingService extends Service {
                 //during every iteration, use the aggregator to merge the scans into one
                 aggregator.insertMeasurement(apinfos);
                 Log.d(TAG, (storeIterations - storingCounter) + " iterations left for storing " + currentLocationLabel);
+                Log.d(TAG, "current measurement: "+apinfos.toString());
                 storingCounter++;
                 b.putInt("current_iteration", storingCounter);
                 b.putInt("total_iterations", storeIterations);
@@ -177,7 +178,7 @@ public class WifiFingerprintingService extends Service {
                     if(!active) {
                         getBaseContext().unregisterReceiver(wifiScanAvailableReceiver);
                     }
-                    Log.d(TAG, "new fingerprint stored! LocationLabel: "+currentLocationLabel);
+                    Log.d(TAG, "new fingerprint stored! LocationLabel: "+currentLocationLabel+"; APs: "+aggregator.returnAggregatedAPs().toString());
                     storingCounter = -1;
                 }
 
@@ -206,23 +207,45 @@ public class WifiFingerprintingService extends Service {
             //computes the centroid using a filtered set of fingerprints, in order to estimate the location
             List<WifiFingerprint> filtered = stdEuclid.filterComputedNearestFingerprints(maximumDistance, numberOfNearestNeighbors);
 
-            //TODO: computeCentroid() and return the results to the activity
-            //Location = computeCentroid(filtered);
-
             IndoorLocatorApplication mApp = (IndoorLocatorApplication) getApplication();
+            if(!filtered.isEmpty()) {
+                Location l = computeCentroid(filtered);
+                mApp.setEstimatedLocation(l);
+
+                //notifies the application so that it can retrieve the new location
+                Intent broadcastIntent = new Intent();
+                broadcastIntent.setAction(IndoorLocatorApplication.LOCATION_ESTIMATION_READY);
+                sendBroadcast(broadcastIntent);
+            }
+
             mApp.setkBestFingerprints(orderedResults);
             //set also the current sensed fingerprint
             mApp.setCurrentFingerprint(currentMeasure);
 
             //notifies the application so that it can retrieve the so built list of fingerprints
             Intent broadcastIntent = new Intent();
-            broadcastIntent.setAction(IndoorLocatorApplication.LOCATION_ESTIMATION_READY);
+            broadcastIntent.setAction(IndoorLocatorApplication.FINGERPRINT_SCAN_AVAILABLE);
             sendBroadcast(broadcastIntent);
             if (wifi.isWifiEnabled()) {
                 wifi.startScan();
             }
         }
     };
+
+    private Location computeCentroid(List<WifiFingerprint> fps){
+        double centroidLat=0, centroidLon=0, centroidAlt=0;
+        for(WifiFingerprint f : fps){
+            Location fpLocation = f.getLocation();
+            centroidLat += fpLocation.getLatitude();
+            centroidLon += fpLocation.getLongitude();
+            centroidAlt += fpLocation.getAltitude();
+        }
+        Location l = new Location("wifi_centroid");
+        l.setLatitude(centroidLat / fps.size());
+        l.setLongitude(centroidLon / fps.size());
+        l.setAltitude(centroidAlt / fps.size());
+        return l;
+    }
 
     /*
      * Handler for requests coming from the activity
@@ -268,6 +291,9 @@ public class WifiFingerprintingService extends Service {
 
                     maximumDistance = b.getDouble("distance_threshold");
                     Log.d(TAG, "Maximum distance: "+maximumDistance);
+
+                    storeIterations = b.getInt("storing_iterations");
+                    Log.d(TAG, "Store iterations: "+storeIterations);
                     break;
 
                 case MSG_LOCATE_ONOFF:

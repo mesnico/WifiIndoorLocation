@@ -5,7 +5,11 @@
     <string name="section_format">Hello World from section: %1$d</string>
     <string name="title_activity_settings">Settings</string>
 
-    <!-- Strings related to Settings -->
+    <!-- Strings related to Settings Header -->
+    <string name="pref_header_matching">Location Matching</string>
+    <string name="pref_header_storing">Location Storing</string>
+
+    <!-- Strings related to Location Matching Settings -->
 
     <string name="settings_signal_normalization">Signal Strength Normalization</string>
     <string name="settings_signal_normalization_details">
@@ -20,5 +24,11 @@
     <string name="similarity_filtering">Similarity Filtering</string>
     <string name="settings_distance_threshold">Distance Threshold</string>
     <string name="settings_nearest_neighbors">Number of Nearest-Neighbors</string>
+
+    <!-- Strings related to Location Storing Settings -->
+    <string name="storing_iterations">Storing Iterations</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 
 </resources>

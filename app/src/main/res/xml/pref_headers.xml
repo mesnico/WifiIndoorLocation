@@ -1,0 +1,15 @@
+<preference-headers xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- These settings headers are only used on tablets. -->
+
+    <header
+        android:fragment="com.unipi.nicola.indoorlocator.SettingsActivity$LocationMatchingPreferenceFragment"
+        android:icon="@drawable/ic_info_black_24dp"
+        android:title="@string/pref_header_matching" />
+
+    <header
+        android:fragment="com.unipi.nicola.indoorlocator.SettingsActivity$LocationStoringPreferenceFragment"
+        android:icon="@drawable/ic_notifications_black_24dp"
+        android:title="@string/pref_header_storing" />
+
+</preference-headers>

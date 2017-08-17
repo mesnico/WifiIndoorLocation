@@ -47,4 +47,9 @@ public class AccessPointInfos implements Comparable<AccessPointInfos>{
     public String getNetworkName() {
         return networkName;
     }
+
+    @Override
+    public String toString(){
+        return networkName + ":" + signalStrength + " -- ";
+    }
 }
