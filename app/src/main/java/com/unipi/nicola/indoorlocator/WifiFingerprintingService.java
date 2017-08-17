@@ -86,7 +86,7 @@ public class WifiFingerprintingService extends Service {
 
         //TODO: the database at the moment is in-memory, so at the startup the following entries are reentered, as of now. Instead, those values should be permanent and stored using the STORE functionality
         //inserts a fingerprint
-        List<AccessPointInfos> aps1 = new ArrayList<>();
+        /*List<AccessPointInfos> aps1 = new ArrayList<>();
         aps1.add(new AccessPointInfos(-20, "00:18:4d:cf:ca:26", "net1"));
         aps1.add(new AccessPointInfos(-88, "c0:ff:d4:a2:cf:da", "net2"));
         WifiFingerprint fp1 = new WifiFingerprint(aps1,new Location("WifiLocator"), "piano_sopra");
@@ -95,12 +95,7 @@ public class WifiFingerprintingService extends Service {
         aps2.add(new AccessPointInfos(-88, "00:18:4d:cf:ca:26", "net1"));
         aps2.add(new AccessPointInfos(-20, "c0:ff:d4:a2:cf:da", "net2"));
         WifiFingerprint fp2 = new WifiFingerprint(aps2,new Location("WifiLocator"), "piano_sotto");
-        dba.insertFingerprint(fp2);
-
-        //checks if that fingerprint 11:11:11:11:11:11 gives me "stanza1"
-        /*List<AccessPointInfos> sensedAps = new ArrayList<>();
-        sensedAps.add(new AccessPointInfos(-20, "11:11:11:11:11:11", "net1"));
-        List<WifiFingerprint> retFP = dba.extractCommonFingerprints(new WifiFingerprint(sensedAps,null,null), 1);*/
+        dba.insertFingerprint(fp2);*/
     }
 
     /* When an activity binds to this service, the messenger object to communicate with it is returned

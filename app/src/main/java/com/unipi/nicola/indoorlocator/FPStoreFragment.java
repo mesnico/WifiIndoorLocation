@@ -44,9 +44,9 @@ import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprint;
 
 public class FPStoreFragment extends Fragment implements View.OnClickListener, LocationListener{
     private static final String TAG = "FPStoreFragment";
-    View rootView;  //to be inflated with this fragment xml
-    LocationManager locationManager;
-    String locationProvider;
+    private View rootView;  //to be inflated with this fragment xml
+    private LocationManager locationManager;
+    private String locationProvider;
     private static final int PLACE_PICKER_REQUEST = 1;
 
     static final int MSG_NEXT_STORING_ITERATION =   1;  //TODO: here, listen for this message sent by the service
@@ -55,19 +55,19 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
      * The messenger object that must be passed from the activity and that is needed in order for this fragment
      * to communicate with the Fingerprinting Service
      */
-    Messenger mService;
+    private Messenger mService;
     private Messenger mMessenger = new Messenger(new IncomingHandler());
 
-    EditText lat;
-    EditText lon;
-    EditText alt;
-    Button pickPlace;
-    Button store;
-    CheckBox gpsOn;
-    TextView accuracy;
-    ProgressBar storeProgress;
+    private EditText lat;
+    private EditText lon;
+    private EditText alt;
+    private Button pickPlace;
+    private Button store;
+    private CheckBox gpsOn;
+    private TextView accuracy;
+    private ProgressBar storeProgress;
 
-    Location location; //the location to be filled both by GPS or place picker
+    private Location location; //the location to be filled both by GPS or place picker
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -153,6 +153,7 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
                 e.printStackTrace();
             }
         }
+        storeProgress.setProgress(0);
     }
 
     @Override

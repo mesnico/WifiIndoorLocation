@@ -25,10 +25,9 @@ import android.widget.CompoundButton;
 import android.widget.ListView;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprint;
-
-import org.w3c.dom.Text;
 
 /**
  * Created by Nicola on 08/06/2017.
@@ -57,8 +56,8 @@ public class FPLocateFragment extends Fragment implements View.OnClickListener, 
     public void onStart() {
         super.onStart();
         //Registers the broadcast receiver to receive notifications about new position estimation available
-        getActivity().registerReceiver(locationEstimationAvailable, new IntentFilter(
-                IndoorLocatorApplication.LOCATION_ESTIMATION_READY));
+        getActivity().registerReceiver(fingerprintScanAvailable, new IntentFilter(
+                IndoorLocatorApplication.FINGERPRINT_SCAN_AVAILABLE));
 
         app = (IndoorLocatorApplication) getActivity().getApplication();
     }
@@ -66,7 +65,7 @@ public class FPLocateFragment extends Fragment implements View.OnClickListener, 
     @Override
     public void onStop(){
         super.onStop();
-        getActivity().unregisterReceiver(locationEstimationAvailable);
+        getActivity().unregisterReceiver(fingerprintScanAvailable);
     }
 
 
@@ -108,7 +107,13 @@ public class FPLocateFragment extends Fragment implements View.OnClickListener, 
     public void onClick(View v){
         //if the current APs button is pressed, then the access point floating view must be shown
         if(v.getId() == R.id.current_aps){
-            WifiLocatorActivity.showFingerprintApList(getActivity(), v, new Point(0,80), app.getCurrentFingerprint());
+            if(app.getCurrentFingerprint() != null) {
+                WifiLocatorActivity.showFingerprintApList(getActivity(), v, new Point(0, 80), app.getCurrentFingerprint());
+            } else {
+                //no current aps detected
+                String toastMsg = "No APs detected recently";
+                Toast.makeText(getContext(), toastMsg, Toast.LENGTH_LONG).show();
+            }
         }
     }
 
@@ -151,10 +156,10 @@ public class FPLocateFragment extends Fragment implements View.OnClickListener, 
     /**
      * Handler for broadcast notification telling a new wifi fingerprint position estimation is available
      */
-    private final BroadcastReceiver locationEstimationAvailable = new BroadcastReceiver() {
+    private final BroadcastReceiver fingerprintScanAvailable = new BroadcastReceiver() {
         @Override
         public void onReceive(final Context context, final Intent intent) {
-            Log.d(TAG, "New location estimation is available!");
+            Log.d(TAG, "New wifi fingerprint scan is available!");
             updateFingerprintList();
         }
     };

@@ -48,7 +48,7 @@ public class WifiLocatorActivity extends AppCompatActivity {
     //Messenger for communicating with the fingerprinting service
     Messenger mService = null;
 
-    //The fragment actually shown
+    //The fragment actually loaded
     Fragment actualFragment = null;
 
     //Flag indicating whether we have called bind on the service
@@ -189,10 +189,12 @@ public class WifiLocatorActivity extends AppCompatActivity {
         public Fragment getItem(int position) {
             // getItem is called to instantiate the fragment for the given page.
             switch(position){
+                case 0:
+                    actualFragment = new FPMapFragment();
+                    break;
                 case 1:
                     actualFragment = new FPLocateFragment();
                     break;
-                case 0:
                 case 2:
                     actualFragment = new FPStoreFragment();
                     break;
