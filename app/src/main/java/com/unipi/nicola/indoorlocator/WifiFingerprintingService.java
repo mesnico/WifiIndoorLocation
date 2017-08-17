@@ -13,6 +13,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
+import android.os.RemoteException;
 import android.util.Log;
 
 import com.unipi.nicola.indoorlocator.fingerprinting.AccessPointInfos;
@@ -31,9 +32,10 @@ public class WifiFingerprintingService extends Service {
     //maximum number of returned fingerprints after ordering
     static final int MAX_FINGERPRINTS = 10;
 
-    static final int MSG_STORE_FINGERPRINT =                    1;
-    static final int MSG_PARAMETERS_CHANGED =                   2;
-    static final int MSG_LOCATE_ONOFF =                            3;
+    static final int MSG_STORE_FRAGMENT_HELLO =                                1;
+    static final int MSG_STORE_FINGERPRINT =                    2;
+    static final int MSG_PARAMETERS_CHANGED =                   3;
+    static final int MSG_LOCATE_ONOFF =                         4;
 
     private WifiManager wifi;
 
@@ -46,11 +48,16 @@ public class WifiFingerprintingService extends Service {
     //The messenger object that must be passed to the activity in order to contact this service
     private Messenger mMessenger = new Messenger(new IncomingHandler());
 
+    //The messenger object through which this service can send messages to the fp store fragment
+    private Messenger mStoreFragment;
+
     boolean signalPowerNormalization = false;
     int minMatchingAPs = 1;
     int numberOfNearestNeighbors;
     double maximumDistance;
     boolean active = true;  //determine if the service is performing wifi scanning in order to estimate positions
+
+    int storeIterations = 3;
 
     WifiAPsAggregator aggregator;
     Location currentLocation;
@@ -140,59 +147,77 @@ public class WifiFingerprintingService extends Service {
                 ));
             }
 
-            //if storingCounter is 0, then we accumulated enough scans; the resulting aggregated APs
-            //can be stored in the database
-            if(storingCounter == 0){
-                WifiFingerprint aggregatedFP = new WifiFingerprint(
-                        aggregator.returnAggregatedAPs(), currentLocation, currentLocationLabel);
-                dba.insertFingerprint(aggregatedFP);
-                //if initially, before the storing procedure, the service was inactive, then I deregister again the
-                //wifi scan receiver
-                if(!active) {
-                    getBaseContext().unregisterReceiver(wifiScanAvailableReceiver);
-                }
-                Log.d(TAG, "new fingerprint stored! LocationLabel: "+currentLocationLabel);
-                storingCounter = -1;
-            }
-
-            if(storingCounter>0){
+            if(storingCounter <= storeIterations && storingCounter >= 0){
                 /* we are in storing mode, so this beacons must be elaborated and then put into the
                  * database
                  */
+                Bundle b = new Bundle();
+
+                //during every iteration, use the aggregator to merge the scans into one
                 aggregator.insertMeasurement(apinfos);
-                Log.d(TAG, storingCounter + " iterations left for storing "+currentLocationLabel);
-                storingCounter--;
+                Log.d(TAG, (storeIterations - storingCounter) + " iterations left for storing " + currentLocationLabel);
+                storingCounter++;
+                b.putInt("current_iteration", storingCounter);
+                b.putInt("total_iterations", storeIterations);
 
-            } else {
-                /* matching mode: the APs sensed must be matched against fingerprints found in the
-                 * database
-                 */
+                //if storingCounter equals storeIterations, then we accumulated enough scans; the resulting aggregated APs
+                //can be stored in the database
+                if(storingCounter == storeIterations){
+                    WifiFingerprint aggregatedFP = new WifiFingerprint(
+                            aggregator.returnAggregatedAPs(), currentLocation, currentLocationLabel);
 
-                //the current wifi APs set that must be compared with the retrieved FPs in the DB
-                WifiFingerprint currentMeasure = new WifiFingerprint(apinfos, new Location("test"), "Just here");
+                    //stores the aggregated value in the db and send the result to the store fragment,
+                    //only if fingerprint is not empty, otherwise it is useless
+                    if(!aggregatedFP.getAccessPoints().isEmpty()) {
+                        dba.insertFingerprint(aggregatedFP);
+                        b.putSerializable("aggregated_fp", aggregatedFP);
+                    }
+                    //if initially, before the storing procedure, the service was inactive, then I deregister again the
+                    //wifi scan receiver
+                    if(!active) {
+                        getBaseContext().unregisterReceiver(wifiScanAvailableReceiver);
+                    }
+                    Log.d(TAG, "new fingerprint stored! LocationLabel: "+currentLocationLabel);
+                    storingCounter = -1;
+                }
 
-                //search in DB fingerprints having at least "minMatchingAPs" overlapping BSSID
-                List<WifiFingerprint> foundFP = dba.extractCommonFingerprints(currentMeasure, minMatchingAPs);
-
-                FingerprintDistance stdEuclid = new FingerprintEuclidDistance(signalPowerNormalization);
-                List<WifiFingerprint> orderedResults = stdEuclid.computeNearestFingerprints(foundFP,currentMeasure, MAX_FINGERPRINTS);
-
-                //computes the centroid using a filtered set of fingerprints, in order to estimate the location
-                List<WifiFingerprint> filtered = stdEuclid.filterComputedNearestFingerprints(maximumDistance, numberOfNearestNeighbors);
-
-                //TODO: computeCentroid() and return the results to the activity
-                //Location = computeCentroid(filtered);
-
-                IndoorLocatorApplication mApp = (IndoorLocatorApplication) getApplication();
-                mApp.setkBestFingerprints(orderedResults);
-                //set also the current sensed fingerprint
-                mApp.setCurrentFingerprint(currentMeasure);
-
-                //notifies the application so that it can retrieve the so built list of fingerprints
-                Intent broadcastIntent = new Intent();
-                broadcastIntent.setAction(IndoorLocatorApplication.LOCATION_ESTIMATION_READY);
-                sendBroadcast(broadcastIntent);
+                //send notification to the fp fragment
+                Message msg = Message.obtain(null, FPStoreFragment.MSG_NEXT_STORING_ITERATION);
+                msg.setData(b);
+                try {
+                    mStoreFragment.send(msg);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
             }
+
+            /* in any case, matching mode is enabled (storingCounter = -1): the APs sensed must be matched against
+             * fingerprints found in the database
+             */
+            //the current wifi APs set that must be compared with the retrieved FPs in the DB
+            WifiFingerprint currentMeasure = new WifiFingerprint(apinfos, new Location("test"), "Just here");
+
+            //search in DB fingerprints having at least "minMatchingAPs" overlapping BSSID
+            List<WifiFingerprint> foundFP = dba.extractCommonFingerprints(currentMeasure, minMatchingAPs);
+
+            FingerprintDistance stdEuclid = new FingerprintEuclidDistance(signalPowerNormalization);
+            List<WifiFingerprint> orderedResults = stdEuclid.computeNearestFingerprints(foundFP,currentMeasure, MAX_FINGERPRINTS);
+
+            //computes the centroid using a filtered set of fingerprints, in order to estimate the location
+            List<WifiFingerprint> filtered = stdEuclid.filterComputedNearestFingerprints(maximumDistance, numberOfNearestNeighbors);
+
+            //TODO: computeCentroid() and return the results to the activity
+            //Location = computeCentroid(filtered);
+
+            IndoorLocatorApplication mApp = (IndoorLocatorApplication) getApplication();
+            mApp.setkBestFingerprints(orderedResults);
+            //set also the current sensed fingerprint
+            mApp.setCurrentFingerprint(currentMeasure);
+
+            //notifies the application so that it can retrieve the so built list of fingerprints
+            Intent broadcastIntent = new Intent();
+            broadcastIntent.setAction(IndoorLocatorApplication.LOCATION_ESTIMATION_READY);
+            sendBroadcast(broadcastIntent);
             if (wifi.isWifiEnabled()) {
                 wifi.startScan();
             }
@@ -207,9 +232,15 @@ public class WifiFingerprintingService extends Service {
         public void handleMessage(Message msg) {
             Bundle b = msg.getData();
             switch (msg.what) {
+                case MSG_STORE_FRAGMENT_HELLO:
+                    //store the interlocutor
+                    mStoreFragment = msg.replyTo;
+                    Log.d(TAG, "Hello message received from store fragment!");
+                    break;
+
                 case MSG_STORE_FINGERPRINT:
                     //initialize the counter and the new aggregator
-                    storingCounter = 1;
+                    storingCounter = 0;
                     aggregator = new WifiAPsAggregator();
                     //receive the current location
                     currentLocation = b.getParcelable("current_location");

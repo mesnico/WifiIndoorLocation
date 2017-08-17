@@ -190,10 +190,12 @@ public class WifiLocatorActivity extends AppCompatActivity {
                     break;
             }
 
-            //set the messenger object in the new shown fragment
-            Bundle b = new Bundle();
-            b.putParcelable("mService",mService);
-            actualFragment.setArguments(b);
+            //set the messenger object in the new shown fragment, if the messenger is ready
+            if(mService!=null) {
+                Bundle b = new Bundle();
+                b.putParcelable("mService", mService);
+                actualFragment.setArguments(b);
+            }
 
             return actualFragment;
         }

@@ -3,6 +3,7 @@ package com.unipi.nicola.indoorlocator.fingerprinting;
 import android.location.Location;
 import android.os.Bundle;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 
@@ -13,7 +14,7 @@ import java.util.List;
  * fully characterize this fingerprint. The Fingerprint is associated a known location.
  */
 
-public class WifiFingerprint implements Comparable<WifiFingerprint>{
+public class WifiFingerprint implements Comparable<WifiFingerprint>, Serializable{
     private Location location;
     private List<AccessPointInfos> accessPoints;
     private double distance = 0;
