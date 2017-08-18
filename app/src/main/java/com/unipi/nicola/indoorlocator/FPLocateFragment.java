@@ -1,13 +1,16 @@
 package com.unipi.nicola.indoorlocator;
 
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Message;
@@ -28,12 +31,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprint;
+import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprintDBAdapter;
 
 /**
  * Created by Nicola on 08/06/2017.
  */
 
-public class FPLocateFragment extends Fragment implements View.OnClickListener, CompoundButton.OnCheckedChangeListener, AdapterView.OnItemClickListener {
+public class FPLocateFragment extends Fragment implements View.OnClickListener, CompoundButton.OnCheckedChangeListener, AdapterView.OnItemClickListener, AdapterView.OnItemLongClickListener {
     private static final String TAG = "FPLocateFragment";
     IndoorLocatorApplication app;
     /*
@@ -76,6 +80,7 @@ public class FPLocateFragment extends Fragment implements View.OnClickListener, 
 
         fingerprintsList = (ListView) rootView.findViewById(R.id.fingerprints_list);
         fingerprintsList.setOnItemClickListener(this);
+        fingerprintsList.setOnItemLongClickListener(this);
         //attach the header to the fingerprints list
         ViewGroup header = (ViewGroup) LayoutInflater.from(getContext()).inflate(R.layout.fingerprints_list_header, fingerprintsList, false);
         fingerprintsList.addHeaderView(header);
@@ -102,6 +107,43 @@ public class FPLocateFragment extends Fragment implements View.OnClickListener, 
         WifiFingerprint selectedFP = (WifiFingerprint) l.getItemAtPosition(position);
         WifiLocatorActivity.showFingerprintApList(getActivity(), v, new Point(0,80), selectedFP);
     }
+
+    @Override
+    public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+        Log.d(TAG,"Item long clicked!");
+        if(view.getId()==R.id.fp_list_header) return true;
+
+        final WifiFingerprint selectedFP = (WifiFingerprint) parent.getItemAtPosition(position);
+
+        final AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setMessage("Do you want to delete fingerprint \""+selectedFP.getLocationLabel()+"\"?")
+                .setCancelable(false)
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    public void onClick(final DialogInterface dialog, final int id) {
+                        WifiFingerprintDBAdapter dba = new WifiFingerprintDBAdapter(getContext());
+                        dba.open(true);
+                        dba.deleteFingerprintById(selectedFP.getId());
+                        Log.d(TAG,"Removed fingerprint with id "+selectedFP.getId());
+                        dba.close();
+                    }
+                })
+                .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                    public void onClick(final DialogInterface dialog, final int id) {
+                        dialog.cancel();
+                    }
+                });
+        final AlertDialog alert = builder.create();
+        alert.show();
+
+        return true;
+    }
+
+    /**
+     * Method for handling long clicks in the fingerprint list view. That fingerprint is asked to
+     * be deleted
+     * @param v
+     */
+
 
     @Override
     public void onClick(View v){

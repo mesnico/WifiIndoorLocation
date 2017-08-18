@@ -45,7 +45,7 @@ public class WifiFingerprintDBHelper extends SQLiteOpenHelper {
             COLUMN_HWADDR + " TEXT NOT NULL, " +
             COLUMN_SIGNALSTRENGTH + " INTEGER, " +
             "PRIMARY KEY (" + COLUMN_FPID + ", " + COLUMN_HWADDR + "), " +
-            "FOREIGN KEY (" + COLUMN_FPID + ") REFERENCES " + TABLE_FINGERPRINTS + "(" + COLUMN_FPID + "))";
+            "FOREIGN KEY (" + COLUMN_FPID + ") REFERENCES " + TABLE_FINGERPRINTS + "(" + COLUMN_FPID + ") ON DELETE CASCADE)";
 
 
     private static final String SQL_DELETE_ENTRIES =
@@ -53,7 +53,7 @@ public class WifiFingerprintDBHelper extends SQLiteOpenHelper {
             "DROP TABLE IF EXISTS " + TABLE_FINGERPRINTS ;
 
     public WifiFingerprintDBHelper(Context context) {
-        super(context, /*DATABASE_NAME*/null, null, DATABASE_VERSION);
+        super(context, DATABASE_NAME, null, DATABASE_VERSION);
         File dbFile = context.getDatabasePath(DATABASE_NAME);
         boolean t = dbFile.exists();
     }
@@ -62,6 +62,12 @@ public class WifiFingerprintDBHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
         db.execSQL(SQL_CREATE_FP_TABLE);
         db.execSQL(SQL_CREATE_AP_TABLE);
+    }
+
+    @Override
+    public void onConfigure(SQLiteDatabase db) {
+        super.onConfigure(db);
+        db.setForeignKeyConstraintsEnabled(true);
     }
 
     @Override

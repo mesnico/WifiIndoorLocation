@@ -18,6 +18,7 @@ public class WifiFingerprint implements Comparable<WifiFingerprint>, Serializabl
     private Location location;
     private List<AccessPointInfos> accessPoints;
     private double distance = 0;
+    private int id;
 
 
     /**
@@ -74,5 +75,13 @@ public class WifiFingerprint implements Comparable<WifiFingerprint>, Serializabl
 
     public List<AccessPointInfos> getAccessPoints() {
         return accessPoints;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 }

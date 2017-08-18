@@ -132,6 +132,17 @@ public class WifiFingerprintDBAdapter {
         return null;
     }
 
+    /**
+     * This function deletes a fingerprint given its id
+     * @param fpId id on the fingerprint to be deleted
+     */
+    public void deleteFingerprintById(int fpId){
+        database.delete(
+                WifiFingerprintDBHelper.TABLE_FINGERPRINTS,
+                WifiFingerprintDBHelper.COLUMN_FPID + "=" + fpId,
+                null);
+    }
+
     private List<WifiFingerprint> buildFingerprintList (Cursor searchResultCursor){
         int currentFingerprintID = -1;
         int oldFingerprintID = -1;
@@ -139,6 +150,7 @@ public class WifiFingerprintDBAdapter {
         List<AccessPointInfos> apList = new ArrayList<>();
 
         String locLabel = "";
+        int fpId=0;
         Location loc = null;
         boolean firstIt = true;
         boolean lastIt = false;
@@ -166,10 +178,14 @@ public class WifiFingerprintDBAdapter {
                 loc.setLongitude(searchResultCursor.getDouble(searchResultCursor.getColumnIndex(WifiFingerprintDBHelper.COLUMN_LONGITUDE)));
                 loc.setAltitude(searchResultCursor.getDouble(searchResultCursor.getColumnIndex(WifiFingerprintDBHelper.COLUMN_ALTITUDE)));
                 locLabel = searchResultCursor.getString(searchResultCursor.getColumnIndex(WifiFingerprintDBHelper.COLUMN_FPLABEL));
+                fpId = searchResultCursor.getInt(searchResultCursor.getColumnIndex(WifiFingerprintDBHelper.COLUMN_FPID));
                 firstIt = false;
             } else {
                 //we have to add the constructed fingerprint to the list
-                fpList.add(new WifiFingerprint(apList, loc, locLabel));
+                WifiFingerprint newFp = new WifiFingerprint(apList, loc, locLabel);
+                //set the id of this fingerprint so that it can be deleted whenever needed
+                newFp.setId(fpId);
+                fpList.add(newFp);
                 apList = new ArrayList<>();
                 //after having flushed also the last values, exit from the cycle
                 if(lastIt) break;
