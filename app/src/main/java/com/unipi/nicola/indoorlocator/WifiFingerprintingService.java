@@ -25,6 +25,8 @@ import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprintDBAdapter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 public class WifiFingerprintingService extends Service {
     static final String TAG = "FingerprintingService";
@@ -68,6 +70,7 @@ public class WifiFingerprintingService extends Service {
 
     @Override
     public void onCreate() {
+        super.onCreate();
         Log.d(TAG, "***************** Service created!");
         //register for broadcast receivers (wifi state and new scan available)
         this.registerReceiver(wifiStateChangedReceiver, new IntentFilter(
@@ -109,6 +112,9 @@ public class WifiFingerprintingService extends Service {
 
     @Override
     public void onDestroy(){
+        super.onDestroy();
+        unregisterReceiver(wifiStateChangedReceiver);
+        unregisterReceiver(wifiScanAvailableReceiver);
         //closes the DB
         dba.close();
     }
@@ -229,16 +235,29 @@ public class WifiFingerprintingService extends Service {
 
     private Location computeCentroid(List<WifiFingerprint> fps){
         double centroidLat=0, centroidLon=0, centroidAlt=0;
+        String concatenatedIds = "";
+        Set<Integer> idSet = new TreeSet<>();
         for(WifiFingerprint f : fps){
             Location fpLocation = f.getLocation();
             centroidLat += fpLocation.getLatitude();
             centroidLon += fpLocation.getLongitude();
             centroidAlt += fpLocation.getAltitude();
+            //add the identifier to the set so that an unique index for this location can be built
+            idSet.add(f.getId());
         }
         Location l = new Location("wifi_centroid");
         l.setLatitude(centroidLat / fps.size());
         l.setLongitude(centroidLon / fps.size());
         l.setAltitude(centroidAlt / fps.size());
+
+        //calculate the id as concatenation of ordered ids
+        for(int i : idSet){
+            concatenatedIds += i;
+        }
+        //put the identifier into the location through a string bundle
+        Bundle b = new Bundle();
+        b.putString("id",concatenatedIds);
+        l.setExtras(b);
         return l;
     }
 

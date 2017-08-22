@@ -7,8 +7,9 @@
         android:title="@string/settings_signal_normalization" />
     <PreferenceCategory android:title="@string/prefiltering">
 
-        <EditTextPreference
+        <com.unipi.nicola.indoorlocator.UI.CustomSummaryEditTextPreference
             android:defaultValue="1"
+            android:summary="@string/settings_min_matching_aps_summary"
             android:inputType="number"
             android:selectAllOnFocus="true"
             android:singleLine="true"
@@ -17,21 +18,32 @@
     </PreferenceCategory>
     <PreferenceCategory android:title="@string/similarity_filtering">
 
-        <EditTextPreference
+        <com.unipi.nicola.indoorlocator.UI.CustomSummaryEditTextPreference
             android:defaultValue="40.0"
             android:inputType="number"
             android:selectAllOnFocus="true"
             android:singleLine="true"
             android:title="@string/settings_distance_threshold"
-            android:key="distance_threshold" />
-        <EditTextPreference
+            android:key="distance_threshold"
+            android:summary="@string/settings_distance_threshold_summary"/>
+        <com.unipi.nicola.indoorlocator.UI.CustomSummaryEditTextPreference
             android:defaultValue="4"
             android:inputType="number"
             android:selectAllOnFocus="true"
             android:singleLine="true"
             android:title="@string/settings_nearest_neighbors"
-            android:key="nn_number" />
+            android:key="nn_number"
+            android:summary="@string/nn_number_summary"/>
     </PreferenceCategory>
+
+    <com.unipi.nicola.indoorlocator.UI.CustomSummaryEditTextPreference
+        android:defaultValue="4"
+        android:inputType="number"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/storing_iterations"
+        android:key="storing_iterations"
+        android:summary="@string/storing_iterations_summary"/>
 
     <!-- NOTE: EditTextPreference accepts EditText attributes. -->
     <!-- NOTE: EditTextPreference's summary should be set to its value by the activity code. -->

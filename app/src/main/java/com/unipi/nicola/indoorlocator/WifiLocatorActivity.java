@@ -9,6 +9,8 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.graphics.Point;
+import android.hardware.Sensor;
+import android.hardware.SensorManager;
 import android.location.LocationManager;
 import android.net.wifi.WifiManager;
 import android.os.IBinder;
@@ -53,6 +55,10 @@ public class WifiLocatorActivity extends AppCompatActivity {
 
     //Flag indicating whether we have called bind on the service
     boolean mBound;
+
+    //Services started by this activity
+    Intent locatorService;
+    Intent inertialNavigationService;
 
     private final String TAG = "WifiLocatorActivity";
 
@@ -101,9 +107,21 @@ public class WifiLocatorActivity extends AppCompatActivity {
         });
 
         //Starts the Fingerprinting Service
-        Intent locatorService = new Intent(this, WifiFingerprintingService.class);
+        locatorService = new Intent(this, WifiFingerprintingService.class);
         startService(locatorService);
         Log.d(TAG, "Locator service should be started!");
+
+        //Starts the Inertial Navigation Service only if there are the right sensors
+        SensorManager mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        Sensor rotationSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
+        Sensor stepSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
+        if(rotationSensor != null && stepSensor != null){
+            Log.d(TAG, "Starting Inertial navigation service");
+            inertialNavigationService = new Intent(this, InertialPedestrianNavigationService.class);
+            startService(inertialNavigationService);
+        } else {
+            buildNoSensorsAlertMessage();
+        }
 
         // Bind to the fingerprinting service
         bindService(new Intent(this, WifiFingerprintingService.class), mConnection,
@@ -114,6 +132,20 @@ public class WifiLocatorActivity extends AppCompatActivity {
         if (!manager.isWifiEnabled()) {
             buildAlertMessageNoWifi();
         }
+    }
+
+    private void buildNoSensorsAlertMessage(){
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("There aren't the right sensors to perform inertial navigation. It will be disabled")
+                .setCancelable(false)
+                .setNeutralButton("Ok", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.cancel();
+                    }
+                });
+        final AlertDialog alert = builder.create();
+        alert.show();
     }
 
     private void buildAlertMessageNoWifi() {
@@ -139,6 +171,14 @@ public class WifiLocatorActivity extends AppCompatActivity {
     public void onDestroy(){
         super.onDestroy();
         unbindService(mConnection);
+
+        //stop the services
+        if(inertialNavigationService != null){
+            stopService(inertialNavigationService);
+        }
+        if(locatorService != null){
+            stopService(locatorService);
+        }
     }
 
     @Override
