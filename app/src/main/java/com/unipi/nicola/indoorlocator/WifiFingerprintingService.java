@@ -14,6 +14,7 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.unipi.nicola.indoorlocator.fingerprinting.AccessPointInfos;
@@ -237,6 +238,8 @@ public class WifiFingerprintingService extends Service {
         double centroidLat=0, centroidLon=0, centroidAlt=0;
         String concatenatedIds = "";
         Set<Integer> idSet = new TreeSet<>();
+        String concatenatedLocationLabels;
+        List<String> locationLabelsList = new ArrayList<>();
         for(WifiFingerprint f : fps){
             Location fpLocation = f.getLocation();
             centroidLat += fpLocation.getLatitude();
@@ -244,6 +247,8 @@ public class WifiFingerprintingService extends Service {
             centroidAlt += fpLocation.getAltitude();
             //add the identifier to the set so that an unique index for this location can be built
             idSet.add(f.getId());
+            //add the location label to the list so that it can be inserted into the location we are building
+            locationLabelsList.add(f.getLocationLabel());
         }
         Location l = new Location("wifi_centroid");
         l.setLatitude(centroidLat / fps.size());
@@ -254,9 +259,12 @@ public class WifiFingerprintingService extends Service {
         for(int i : idSet){
             concatenatedIds += i;
         }
-        //put the identifier into the location through a string bundle
+        //compute the location label string concatenation
+        concatenatedLocationLabels = TextUtils.join("-", locationLabelsList);
+        //put the identifier and the concatenated labels into the location through a string bundle
         Bundle b = new Bundle();
         b.putString("id",concatenatedIds);
+        b.putString("location_labels",concatenatedLocationLabels);
         l.setExtras(b);
         return l;
     }

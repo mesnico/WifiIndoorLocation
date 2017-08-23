@@ -2,17 +2,12 @@ package com.unipi.nicola.indoorlocator;
 
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
 import android.graphics.Point;
-import android.graphics.Rect;
-import android.net.wifi.WifiManager;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
@@ -23,7 +18,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.ListView;
 import android.widget.Switch;
@@ -44,7 +38,7 @@ public class FPLocateFragment extends Fragment implements View.OnClickListener, 
      * The messenger object that must be passed from the activity and that is needed in order for this fragment
      * to communicate with the Fingerprinting Service
      */
-    Messenger mService;
+    Messenger mFingerprintingService;
 
     //GUI elements
     private ViewGroup rootView; //to be inflated with this fragment xml
@@ -53,7 +47,7 @@ public class FPLocateFragment extends Fragment implements View.OnClickListener, 
     @Override
     public void setArguments(Bundle b){
         //get the messenger from the activity
-        mService = b.getParcelable("mService");
+        mFingerprintingService = b.getParcelable("mFingerprintingService");
     }
 
     @Override
@@ -172,7 +166,7 @@ public class FPLocateFragment extends Fragment implements View.OnClickListener, 
         b.putBoolean("locate_onoff", isChecked);
         msg.setData(b);
         try {
-            mService.send(msg);
+            mFingerprintingService.send(msg);
         } catch (RemoteException e) {
             e.printStackTrace();
         }

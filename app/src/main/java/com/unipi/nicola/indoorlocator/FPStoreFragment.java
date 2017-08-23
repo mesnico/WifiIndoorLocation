@@ -31,6 +31,7 @@ import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.common.GooglePlayServicesRepairableException;
@@ -55,7 +56,7 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
      * The messenger object that must be passed from the activity and that is needed in order for this fragment
      * to communicate with the Fingerprinting Service
      */
-    private Messenger mService;
+    private Messenger mFingerprintingService;
     private Messenger mMessenger = new Messenger(new IncomingHandler());
 
     private EditText lat;
@@ -117,13 +118,13 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
     @Override
     public void setArguments(Bundle b){
         //get the messenger from the activity
-        mService = b.getParcelable("mService");
+        mFingerprintingService = b.getParcelable("mFingerprintingService");
 
         //sends an hello message so that the service knows who he is talking to
         Message msg = Message.obtain(null, WifiFingerprintingService.MSG_STORE_FRAGMENT_HELLO);
         try {
             msg.replyTo = mMessenger;
-            mService.send(msg);
+            mFingerprintingService.send(msg);
         } catch (RemoteException e) {
             e.printStackTrace();
         }
@@ -133,13 +134,7 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
     public void onStart(){
         super.onStart();
         //the location acquiring restarts only if the checkbox is checked
-        if(gpsOn.isChecked()) {
-            try {
-                locationManager.requestLocationUpdates(locationProvider, 0, 0, this);
-            } catch (SecurityException e) {
-                e.printStackTrace();
-            }
-        }
+        handleGpsCheckBox();
     }
 
     @Override
@@ -150,6 +145,7 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
             try {
                 locationManager.removeUpdates(this);
             } catch (SecurityException e) {
+                Toast.makeText(getContext(),R.string.no_location_permissions,Toast.LENGTH_LONG);
                 e.printStackTrace();
             }
         }
@@ -169,35 +165,7 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
         }
         if(v.getId() == R.id.gps_on){
             //handles the case in which the location is provided by gps
-            CheckBox gpsOn = (CheckBox) v;
-            if(gpsOn.isChecked()){
-                //disable the pick location button and disable the altitude edit text (the altitude is provided by gps itself)
-                //but first, if the location is off, ask the user if it can be turned on
-                final LocationManager manager = (LocationManager) getContext().getSystemService(Context.LOCATION_SERVICE);
-                if (!manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                    buildAlertMessageNoGps();
-                }
-
-                Log.d(TAG,"GPS positioning enabled");
-                pickPlace.setEnabled(false);
-                alt.setEnabled(false);
-                try {
-                    locationManager.requestLocationUpdates(locationProvider, 0, 0, this);
-                } catch(SecurityException e){
-                    e.printStackTrace();
-                }
-            } else {
-                Log.d(TAG,"GPS positioning disabled");
-                pickPlace.setEnabled(true);
-                alt.setEnabled(true);
-                try {
-                    locationManager.removeUpdates(this);
-                } catch(SecurityException e){
-                    e.printStackTrace();
-                }
-                //clear the accuracy, in manual mode it is not needed
-                accuracy.setText("");
-            }
+            handleGpsCheckBox();
         }
         if(v.getId() == R.id.store){
             //handles the storing of the current wifi measurement
@@ -218,10 +186,43 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
             Message msg = Message.obtain(null, WifiFingerprintingService.MSG_STORE_FINGERPRINT);
             msg.setData(b);
             try {
-                mService.send(msg);
+                mFingerprintingService.send(msg);
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    private void handleGpsCheckBox(){
+        if(gpsOn.isChecked()){
+            //disable the pick location button and disable the altitude edit text (the altitude is provided by gps itself)
+            //but first, if the location is off, ask the user if it can be turned on
+            final LocationManager manager = (LocationManager) getContext().getSystemService(Context.LOCATION_SERVICE);
+            if (!manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                buildAlertMessageNoGps();
+            }
+
+            Log.d(TAG,"GPS positioning enabled");
+            pickPlace.setEnabled(false);
+            alt.setEnabled(false);
+            try {
+                locationManager.requestLocationUpdates(locationProvider, 0, 0, this);
+            } catch(SecurityException e){
+                Toast.makeText(getContext(),R.string.no_location_permissions,Toast.LENGTH_LONG);
+                e.printStackTrace();
+            }
+        } else {
+            Log.d(TAG,"GPS positioning disabled");
+            pickPlace.setEnabled(true);
+            alt.setEnabled(true);
+            try {
+                locationManager.removeUpdates(this);
+            } catch(SecurityException e){
+                Toast.makeText(getContext(),R.string.no_location_permissions,Toast.LENGTH_LONG);
+                e.printStackTrace();
+            }
+            //clear the accuracy, in manual mode it is not needed
+            accuracy.setText("");
         }
     }
 

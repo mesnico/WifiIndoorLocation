@@ -25,8 +25,21 @@
     <string name="nn_number_summary">Only the first %s fingerprints are used</string>
 
     <!-- Strings related to Location Storing Settings -->
+    <string name="storing_preferences">Fingerprint Storing</string>
     <string name="storing_iterations">Storing Iterations</string>
     <string name="storing_iterations_summary">%s scans are accumulated and merged</string>
+
+    <!-- Strings related to Inertial navigation and Map Settings -->
+    <string name="inertial_navigation_preferences">Inertial Navigation</string>
+    <string name="beta">Filtering factor</string>
+    <string name="beta_summary">Exponential moving average coefficient for direction filtering</string>
+    <string name="step_length">Step length</string>
+    <string name="step_length_summary">The step length is %s meters</string>
+    <string name="update_after_num_steps">Position update frequency</string>
+    <string name="update_after_num_steps_summary">Position is updated after %s steps</string>
+
+    <!-- Hardcoded strings -->
+    <string name="no_location_permissions">No fine location permissions!</string>
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>

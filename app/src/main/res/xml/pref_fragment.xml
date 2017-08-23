@@ -36,14 +36,46 @@
             android:summary="@string/nn_number_summary"/>
     </PreferenceCategory>
 
-    <com.unipi.nicola.indoorlocator.UI.CustomSummaryEditTextPreference
-        android:defaultValue="4"
-        android:inputType="number"
-        android:selectAllOnFocus="true"
-        android:singleLine="true"
-        android:title="@string/storing_iterations"
-        android:key="storing_iterations"
-        android:summary="@string/storing_iterations_summary"/>
+    <PreferenceCategory android:title="@string/storing_preferences">
+        <com.unipi.nicola.indoorlocator.UI.CustomSummaryEditTextPreference
+            android:defaultValue="4"
+            android:inputType="number"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/storing_iterations"
+            android:key="storing_iterations"
+            android:summary="@string/storing_iterations_summary"/>
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/inertial_navigation_preferences">
+        <com.unipi.nicola.indoorlocator.UI.CustomSummaryEditTextPreference
+            android:defaultValue="0.5"
+            android:inputType="numberDecimal"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/beta"
+            android:key="beta"
+            android:summary="@string/beta_summary"/>
+
+        <com.unipi.nicola.indoorlocator.UI.CustomSummaryEditTextPreference
+            android:defaultValue="0.74"
+            android:inputType="numberDecimal"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/step_length"
+            android:key="step_length"
+            android:summary="@string/step_length_summary"/>
+
+        <com.unipi.nicola.indoorlocator.UI.CustomSummaryEditTextPreference
+            android:defaultValue="3"
+            android:inputType="number"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/update_after_num_steps"
+            android:key="update_after_num_steps"
+            android:summary="@string/update_after_num_steps_summary"/>
+
+        </PreferenceCategory>
 
     <!-- NOTE: EditTextPreference accepts EditText attributes. -->
     <!-- NOTE: EditTextPreference's summary should be set to its value by the activity code. -->

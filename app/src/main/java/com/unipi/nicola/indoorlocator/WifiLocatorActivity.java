@@ -11,7 +11,6 @@ import android.content.SharedPreferences;
 import android.graphics.Point;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
-import android.location.LocationManager;
 import android.net.wifi.WifiManager;
 import android.os.IBinder;
 import android.os.Message;
@@ -35,7 +34,6 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -47,14 +45,16 @@ import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprint;
 
 public class WifiLocatorActivity extends AppCompatActivity {
 
-    //Messenger for communicating with the fingerprinting service
-    Messenger mService = null;
+    //Messenger for communicating with the fingerprinting service and inertial navigation service
+    Messenger mFingerprintingService = null;
+    Messenger mInertialNavigationService = null;
 
     //The fragment actually loaded
     Fragment actualFragment = null;
-
-    //Flag indicating whether we have called bind on the service
-    boolean mBound;
+    //Reference to each individual fragment
+    Fragment mapFragment;
+    Fragment storeFragment;
+    Fragment locateFragment;
 
     //Services started by this activity
     Intent locatorService;
@@ -106,10 +106,21 @@ public class WifiLocatorActivity extends AppCompatActivity {
             }
         });
 
+        //restore the previously saved fragments
+        if(savedInstanceState != null){
+            mapFragment = getSupportFragmentManager().getFragment(savedInstanceState, "mapFragment");
+            storeFragment = getSupportFragmentManager().getFragment(savedInstanceState, "storeFragment");
+            locateFragment = getSupportFragmentManager().getFragment(savedInstanceState, "locateFragment");
+        }
+
         //Starts the Fingerprinting Service
         locatorService = new Intent(this, WifiFingerprintingService.class);
         startService(locatorService);
         Log.d(TAG, "Locator service should be started!");
+
+        // Bind to the Fingerprinting Service
+        bindService(new Intent(this, WifiFingerprintingService.class), mFingerprintingServiceConnection,
+                Context.BIND_AUTO_CREATE);
 
         //Starts the Inertial Navigation Service only if there are the right sensors
         SensorManager mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -117,15 +128,17 @@ public class WifiLocatorActivity extends AppCompatActivity {
         Sensor stepSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
         if(rotationSensor != null && stepSensor != null){
             Log.d(TAG, "Starting Inertial navigation service");
+
+            //Starts the Inertial Navigation Service
             inertialNavigationService = new Intent(this, InertialPedestrianNavigationService.class);
             startService(inertialNavigationService);
+
+            // Bind to the Inertial Navigation Service
+            bindService(new Intent(this, InertialPedestrianNavigationService.class), mInertialServiceConnection,
+                    Context.BIND_AUTO_CREATE);
         } else {
             buildNoSensorsAlertMessage();
         }
-
-        // Bind to the fingerprinting service
-        bindService(new Intent(this, WifiFingerprintingService.class), mConnection,
-                Context.BIND_AUTO_CREATE);
 
         //If wifi disabled, ask the user if it can be enabled
         final WifiManager manager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
@@ -170,7 +183,8 @@ public class WifiLocatorActivity extends AppCompatActivity {
     @Override
     public void onDestroy(){
         super.onDestroy();
-        unbindService(mConnection);
+        unbindService(mFingerprintingServiceConnection);
+        unbindService(mInertialServiceConnection);
 
         //stop the services
         if(inertialNavigationService != null){
@@ -182,12 +196,22 @@ public class WifiLocatorActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        //save fragments
+        if(mapFragment != null) getSupportFragmentManager().putFragment(outState, "mapFragment", mapFragment);
+        if(storeFragment != null) getSupportFragmentManager().putFragment(outState, "storeFragment", storeFragment);
+        if(locateFragment != null) getSupportFragmentManager().putFragment(outState, "locateFragment", locateFragment);
+    }
+
+    /*@Override
     public void onResume(){
         super.onResume();
         if(mBound){
             updatePreferenceValues();
         }
-    }
+    }*/
 
 
     @Override
@@ -207,12 +231,24 @@ public class WifiLocatorActivity extends AppCompatActivity {
         if (id == R.id.action_settings) {
             //show the Settings Activity
             Intent intent = new Intent(this, SettingsActivity.class);
-            startActivity(intent);
+            startActivityForResult(intent,17930);
 
             return true;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    //Through this callback we can know when the settings activity is being closed, so that we can
+    //retrieve the settings and send them to the proper services in order to be updated
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if(requestCode == 17930){
+            Log.d(TAG, "Settings activity finished!");
+            updatePreferenceValues();
+        }
     }
 
     /**
@@ -228,24 +264,28 @@ public class WifiLocatorActivity extends AppCompatActivity {
         @Override
         public Fragment getItem(int position) {
             // getItem is called to instantiate the fragment for the given page.
-            switch(position){
+            switch(position) {
                 case 0:
-                    actualFragment = new FPMapFragment();
+                    if (mapFragment == null) {
+                        mapFragment = new FPMapFragment();
+                    }
+                    actualFragment = mapFragment;
                     break;
                 case 1:
-                    actualFragment = new FPLocateFragment();
+                    if (locateFragment == null){
+                        locateFragment = new FPLocateFragment();
+                    }
+                    actualFragment = locateFragment;
                     break;
                 case 2:
-                    actualFragment = new FPStoreFragment();
+                    if(storeFragment == null) {
+                        storeFragment = new FPStoreFragment();
+                    }
+                    actualFragment = storeFragment;
                     break;
             }
 
-            //set the messenger object in the new shown fragment, if the messenger is ready
-            if(mService!=null) {
-                Bundle b = new Bundle();
-                b.putParcelable("mService", mService);
-                actualFragment.setArguments(b);
-            }
+            tryInjectingMessengersIntoFragments();
 
             return actualFragment;
         }
@@ -270,43 +310,85 @@ public class WifiLocatorActivity extends AppCompatActivity {
         }
     }
 
-    private void updatePreferenceValues(){
-        if(mService == null) return;
+    //try to inject the service messengers objects into the fragments
+    private void tryInjectingMessengersIntoFragments(){
+        Bundle b = new Bundle();
+        if(mFingerprintingService !=null){
+            b.putParcelable("mFingerprintingService", mFingerprintingService);
+        }
+        if(mInertialNavigationService !=null){
+            b.putParcelable("mInertialNavigationService", mInertialNavigationService);
+        }
 
+        if(mapFragment!=null){
+            mapFragment.setArguments(b);
+        }
+        if(storeFragment!=null){
+            storeFragment.setArguments(b);
+        }
+        if(locateFragment!=null){
+            locateFragment.setArguments(b);
+        }
+    }
+
+    private void updatePreferenceValues(){
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
         Message msg;
         Bundle b;
 
-        //matching preferences
+        if(mFingerprintingService != null) {
+            //matching preferences. They are sent to the fingerprinting service
 
-        //signal normalization preference
-        Boolean normalizeSignal = sharedPref.getBoolean(SettingsActivity.PREF_SIGNAL_NORMALIZATION_KEY, false);
-        msg = Message.obtain(null, WifiFingerprintingService.MSG_PARAMETERS_CHANGED);
-        b = new Bundle();
+            //signal normalization preference
+            Boolean normalizeSignal = sharedPref.getBoolean(SettingsActivity.PREF_SIGNAL_NORMALIZATION_KEY, false);
+            msg = Message.obtain(null, WifiFingerprintingService.MSG_PARAMETERS_CHANGED);
+            b = new Bundle();
 
-        b.putBoolean("signal_normalization", normalizeSignal);
+            b.putBoolean("signal_normalization", normalizeSignal);
 
-        //minimum number of matching APs preference
-        int minMatchingAPs = Integer.valueOf(sharedPref.getString(SettingsActivity.PREF_MINIMUM_MATCHING_APS_KEY, "1"));
-        b.putInt("min_matching_aps", minMatchingAPs);
+            //minimum number of matching APs preference
+            int minMatchingAPs = Integer.valueOf(sharedPref.getString(SettingsActivity.PREF_MINIMUM_MATCHING_APS_KEY, "1"));
+            b.putInt("min_matching_aps", minMatchingAPs);
 
-        //distance threshold preference
-        double distanceThreshold = Double.valueOf(sharedPref.getString(SettingsActivity.PREF_DISTANCE_THRESHOLD_KEY, "10"));
-        b.putDouble("distance_threshold", distanceThreshold);
+            //distance threshold preference
+            double distanceThreshold = Double.valueOf(sharedPref.getString(SettingsActivity.PREF_DISTANCE_THRESHOLD_KEY, "10"));
+            b.putDouble("distance_threshold", distanceThreshold);
 
-        //number of nearest neighbors preference
-        int numberOfNearestNeighbors = Integer.valueOf(sharedPref.getString(SettingsActivity.PREF_NEAREST_NEIGHBORS_NUMBER_KEY, "3"));
-        b.putInt("nn_number", numberOfNearestNeighbors);
+            //number of nearest neighbors preference
+            int numberOfNearestNeighbors = Integer.valueOf(sharedPref.getString(SettingsActivity.PREF_NEAREST_NEIGHBORS_NUMBER_KEY, "3"));
+            b.putInt("nn_number", numberOfNearestNeighbors);
 
-        //storing preferences
-        int storingIterations = Integer.valueOf(sharedPref.getString(SettingsActivity.PREF_STORING_ITERATIONS_KEY, "4"));
-        b.putInt("storing_iterations", storingIterations);
+            //storing preferences
+            int storingIterations = Integer.valueOf(sharedPref.getString(SettingsActivity.PREF_STORING_ITERATIONS_KEY, "4"));
+            b.putInt("storing_iterations", storingIterations);
 
-        msg.setData(b);
-        try {
-            mService.send(msg);
-        } catch (RemoteException e) {
-            e.printStackTrace();
+            msg.setData(b);
+            try {
+                mFingerprintingService.send(msg);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        }
+
+        if(mInertialNavigationService != null) {
+            //send inertial navigation settings to inertial navigation service
+            msg = Message.obtain(null, InertialPedestrianNavigationService.MSG_PARAMETERS_CHANGED);
+            b = new Bundle();
+
+            float beta = Float.valueOf(sharedPref.getString(SettingsActivity.PREF_BETA, "0.5"));
+            b.putFloat("beta", beta);
+
+            float stepLength = Float.valueOf(sharedPref.getString(SettingsActivity.PREF_STEP_LENGTH, "0.74"));
+            b.putFloat("step_length", stepLength);
+
+            int updateAfterNumSteps = Integer.valueOf(sharedPref.getString(SettingsActivity.PREF_UPDATE_AFTER_NUM_STEPS, "3"));
+            b.putInt("update_after_num_steps", updateAfterNumSteps);
+            msg.setData(b);
+            try {
+                mInertialNavigationService.send(msg);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -355,41 +437,48 @@ public class WifiLocatorActivity extends AppCompatActivity {
     }
 
     /**
-     * Class for interacting with the main interface of the service.
+     * Class for interacting with the main interface of the fingerprinting service.
      */
-    private ServiceConnection mConnection = new ServiceConnection() {
+    private ServiceConnection mFingerprintingServiceConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder service) {
             // This is called when the connection with the service has been
             // established, giving us the object we can use to
             // interact with the service
-            mService = new Messenger(service);
+            mFingerprintingService = new Messenger(service);
 
-            //set the messenger object in the current fragment
-            if(actualFragment != null) {
-                Bundle b = new Bundle();
-                b.putParcelable("mService", mService);
-                actualFragment.setArguments(b);
-            }
+            tryInjectingMessengersIntoFragments();
 
             // sends the values of the preferences to the fingerprinting service
             updatePreferenceValues();
-
-            mBound = true;
         }
 
         public void onServiceDisconnected(ComponentName className) {
             // This is called when the connection with the service has been
             // unexpectedly disconnected -- that is, its process crashed.
-            mService = null;
+            mFingerprintingService = null;
+        }
+    };
 
-            //set the messenger object in the current fragment
-            if(actualFragment != null) {
-                Bundle b = new Bundle();
-                b.putParcelable("mService", mService);
-                actualFragment.setArguments(b);
-            }
+    /**
+     * Class for interacting with the main interface of the inertial navigation service.
+     */
+    private ServiceConnection mInertialServiceConnection = new ServiceConnection() {
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            // This is called when the connection with the service has been
+            // established, giving us the object we can use to
+            // interact with the service
+            mInertialNavigationService = new Messenger(service);
 
-            mBound = false;
+            tryInjectingMessengersIntoFragments();
+
+            // sends the values of the preferences to the fingerprinting service
+            updatePreferenceValues();
+        }
+
+        public void onServiceDisconnected(ComponentName className) {
+            // This is called when the connection with the service has been
+            // unexpectedly disconnected -- that is, its process crashed.
+            mInertialNavigationService = null;
         }
     };
 }

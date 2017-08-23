@@ -31,16 +31,10 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     public static final String PREF_NEAREST_NEIGHBORS_NUMBER_KEY = "nn_number";
 
     public static final String PREF_STORING_ITERATIONS_KEY = "storing_iterations";
-    /**
-     * A preference value change listener that updates the preference's summary
-     * to reflect its new value.
-     */
-    private static Preference.OnPreferenceChangeListener onChangeListener = new Preference.OnPreferenceChangeListener() {
-        @Override
-        public boolean onPreferenceChange(Preference preference, Object value) {
-            return true;
-        }
-    };
+
+    public static final String PREF_BETA = "beta";
+    public static final String PREF_STEP_LENGTH = "step_length";
+    public static final String PREF_UPDATE_AFTER_NUM_STEPS = "update_after_num_steps";
 
     /**
      * Set up the {@link android.app.ActionBar}, if the API is available.
@@ -64,7 +58,11 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     public boolean onMenuItemSelected(int featureId, MenuItem item) {
         int id = item.getItemId();
         if (id == android.R.id.home) {
-            startActivity(new Intent(this, WifiLocatorActivity.class));
+            /*Intent activity = new Intent(this, WifiLocatorActivity.class);
+            activity.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT);
+            startActivity(activity);*/
+            onBackPressed();
+            finish();
             return true;
         }
         return super.onMenuItemSelected(featureId, item);
@@ -82,27 +80,14 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             addPreferencesFromResource(R.xml.pref_fragment);
             setHasOptionsMenu(true);
 
-            // Bind the summaries of EditText/List/Dialog/Ringtone preferences
-            // to their values. When their values change, their summaries are
-            // updated to reflect the new value, per the Android Design
-            // guidelines.
-            //bindPreferenceSummaryToValue(findPreference(PREF_DISTANCE_THRESHOLD_KEY));
-            //bindPreferenceSummaryToValue(findPreference(PREF_MINIMUM_MATCHING_APS_KEY));
-            //bindPreferenceSummaryToValue(findPreference(PREF_NEAREST_NEIGHBORS_NUMBER_KEY));
-
-            //bindPreferenceSummaryToValue(findPreference(PREF_STORING_ITERATIONS_KEY));
-            findPreference(PREF_SIGNAL_NORMALIZATION_KEY).setOnPreferenceChangeListener(onChangeListener);
-            findPreference(PREF_MINIMUM_MATCHING_APS_KEY).setOnPreferenceChangeListener(onChangeListener);
-            findPreference(PREF_STORING_ITERATIONS_KEY).setOnPreferenceChangeListener(onChangeListener);
-            findPreference(PREF_DISTANCE_THRESHOLD_KEY).setOnPreferenceChangeListener(onChangeListener);
-            findPreference(PREF_NEAREST_NEIGHBORS_NUMBER_KEY).setOnPreferenceChangeListener(onChangeListener);
         }
 
         @Override
         public boolean onOptionsItemSelected(MenuItem item) {
             int id = item.getItemId();
             if (id == android.R.id.home) {
-                startActivity(new Intent(getActivity(), SettingsActivity.class));
+                //startActivity(new Intent(getActivity(), SettingsActivity.class));
+                getActivity().onBackPressed();
                 return true;
             }
             return super.onOptionsItemSelected(item);

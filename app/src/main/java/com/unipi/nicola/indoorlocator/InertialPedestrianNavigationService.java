@@ -11,17 +11,19 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.Location;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.util.Log;
 
-import java.util.Timer;
-import java.util.TimerTask;
-
 public class InertialPedestrianNavigationService extends Service implements SensorEventListener{
     public static final String TAG = "InertialNavService";
+
+    //messages
+    public static final int MSG_RESET = 1;
+    public static final int MSG_PARAMETERS_CHANGED = 2;
 
     private static final float LAT_TO_METERS = 110.574f * 1000;
     private static final float LONG_TO_METERS = 111.320f * 1000;
@@ -50,7 +52,7 @@ public class InertialPedestrianNavigationService extends Service implements Sens
     //Length of a step
     float stepLength = 0.74f; //0.74 meters
     //Time interval after wich the new position is notified
-    int updateSteps = 3; //steps needed to have an update on the map
+    int updateAfterNumSteps = 3; //steps needed to have an update on the map
 
     public InertialPedestrianNavigationService() {
     }
@@ -117,7 +119,24 @@ public class InertialPedestrianNavigationService extends Service implements Sens
     class IncomingHandler extends Handler {
         @Override
         public void handleMessage(Message msg) {
+            Bundle b = msg.getData();
+            switch (msg.what) {
+                case MSG_RESET:
+                    Log.d(TAG,"Reset command received!");
+                    app.getPositionsList().clear();
+                    actualEstimatedLocation = null;
+                    break;
+                case MSG_PARAMETERS_CHANGED:
+                    beta = b.getFloat("beta");
+                    Log.d(TAG, "smoothing parameter beta: "+beta);
 
+                    stepLength = b.getFloat("step_length");
+                    Log.d(TAG, "step length in meters: "+stepLength);
+
+                    updateAfterNumSteps = b.getInt("update_after_num_steps");
+                    Log.d(TAG, "Update after: "+updateAfterNumSteps+" steps");
+                    break;
+            }
         }
     }
 
@@ -154,7 +173,7 @@ public class InertialPedestrianNavigationService extends Service implements Sens
             if(filteredDirection != null) {
                 actualPosition.y += filteredDirection.y * stepLength * (1 / LAT_TO_METERS);
                 actualPosition.x += filteredDirection.x * stepLength * (1 / (LONG_TO_METERS * Math.cos(actualPosition.y * Math.PI / 180)));
-                if (stepCounter % updateSteps == 0) {
+                if (stepCounter % updateAfterNumSteps == 0) {
                     //send the new estimated position in a broadcast intent
                     sendInertialPosition();
                 }
