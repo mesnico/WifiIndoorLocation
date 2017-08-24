@@ -115,7 +115,9 @@ public class WifiFingerprintingService extends Service {
     public void onDestroy(){
         super.onDestroy();
         unregisterReceiver(wifiStateChangedReceiver);
-        unregisterReceiver(wifiScanAvailableReceiver);
+        if(active) {
+            unregisterReceiver(wifiScanAvailableReceiver);
+        }
         //closes the DB
         dba.close();
     }

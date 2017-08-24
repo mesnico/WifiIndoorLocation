@@ -1,13 +1,17 @@
 package com.unipi.nicola.indoorlocator;
 
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Color;
 import android.graphics.PointF;
 import android.location.Location;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
@@ -37,6 +41,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * The fragment carrying the google map.
@@ -44,6 +50,9 @@ import java.util.Set;
 
 public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.OnClickListener {
     public static final String TAG = "FPMapFragment";
+
+    private static final int CALIBRATION_TIME = 5; //seconds
+
     private IndoorLocatorApplication app;
     private GoogleMap gMap = null;
     private View rootView;
@@ -60,6 +69,7 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
     private Polyline userPath;
 
     private ToggleButton realPositioning;
+    private Button calibrationButton;
 
     //set containing all the estimated locations visited so far. It is used in order to print once
     //the marker on the map for every distinct estimated location
@@ -108,6 +118,9 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
         //listener for real positioning toggle button
         realPositioning = (ToggleButton)rootView.findViewById(R.id.real_positioning);
         realPositioning.setOnClickListener(this);
+        //calibration button
+        calibrationButton = (Button)rootView.findViewById(R.id.calibrate);
+        calibrationButton.setOnClickListener(this);
         return rootView;
     }
 
@@ -140,12 +153,13 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        gMap = null;
+        /*gMap.clear();
+        gMap = null;*/
         /*SupportMapFragment f = (SupportMapFragment) getChildFragmentManager()
                 .findFragmentById(R.id.map);
         if (f != null)
             getFragmentManager().beginTransaction().remove(f).commitAllowingStateLoss();*/
-        userPath = null;
+        //userPath = null;
     }
 
     @Override
@@ -170,6 +184,7 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
             }
             estimatedLocationsSet.clear();
             gMap.clear();
+            userPath = null;
         }
         if(v.getId() == R.id.real_positioning){
             try {
@@ -180,6 +195,48 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
                 e.printStackTrace();
             }
         }
+        if(v.getId() == R.id.calibrate){
+            final AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+            builder.setMessage("Keep the phone in portrait mode. Then, in "+CALIBRATION_TIME+" seconds, put it wherever you prefer")
+                    .setCancelable(false)
+                    .setPositiveButton("Ok, start calibration", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            //send a start calibration message and starts a timer
+                            Message msg = Message.obtain(null, InertialPedestrianNavigationService.MSG_START_CALIBRATION);
+                            try {
+                                mInertialNavigationService.send(msg);
+                            } catch (RemoteException e) {
+                                e.printStackTrace();
+                            }
+                            calibrationButton.setEnabled(false);
+
+                            //starts the timer after which the calibration must end
+                            new Handler().postDelayed(new TimerTask() {
+                                @Override
+                                public void run() {
+                                    Message msg = Message.obtain(null, InertialPedestrianNavigationService.MSG_END_CALIBRATION);
+                                    try {
+                                        mInertialNavigationService.send(msg);
+                                    } catch (RemoteException e) {
+                                        e.printStackTrace();
+                                    }
+                                    calibrationButton.setEnabled(true);
+                                    Toast.makeText(getContext(),"Calibration OK!",Toast.LENGTH_SHORT).show();
+                                }
+                            }, CALIBRATION_TIME*1000);
+                        }
+                    })
+                    .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.cancel();
+                        }
+                    });
+            final AlertDialog alert = builder.create();
+            alert.show();
+        }
+
     }
 
     private final BroadcastReceiver locationEstimationAvailable = new BroadcastReceiver() {
