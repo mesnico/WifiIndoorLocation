@@ -6,6 +6,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.graphics.Point;
@@ -17,6 +18,7 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import android.support.design.widget.TabLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -41,9 +43,31 @@ import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.TextView;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesUtil;
+import com.google.android.gms.common.Scopes;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.Scope;
+import com.google.android.gms.common.api.Status;
+import com.google.android.gms.fitness.Fitness;
+import com.google.android.gms.fitness.data.DataPoint;
+import com.google.android.gms.fitness.data.DataSource;
+import com.google.android.gms.fitness.data.DataType;
+import com.google.android.gms.fitness.data.Field;
+import com.google.android.gms.fitness.data.Value;
+import com.google.android.gms.fitness.request.DataSourcesRequest;
+import com.google.android.gms.fitness.request.OnDataPointListener;
+import com.google.android.gms.fitness.request.SensorRequest;
+import com.google.android.gms.fitness.result.DataSourcesResult;
 import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprint;
 
+import java.util.concurrent.TimeUnit;
+
 public class WifiLocatorActivity extends AppCompatActivity {
+
+    private static final int RESOLVE_CONNECTION_REQUEST_CODE = 17931;
+    private static final int SETTINGS_ACTIVITY_FINISHED = 17930;
 
     //Messenger for communicating with the fingerprinting service and inertial navigation service
     Messenger mFingerprintingService = null;
@@ -77,6 +101,11 @@ public class WifiLocatorActivity extends AppCompatActivity {
      * The {@link ViewPager} that will host the section contents.
      */
     private ViewPager mViewPager;
+
+    private GoogleApiClient mGoogleServiceClient = null;
+    // Need to hold a reference to this listener, as it's passed into the "unregister"
+    // method in order to stop all sensors from sending data to this listener.
+    private OnDataPointListener mSensorListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -145,6 +174,178 @@ public class WifiLocatorActivity extends AppCompatActivity {
         if (!manager.isWifiEnabled()) {
             buildAlertMessageNoWifi();
         }
+
+        //try to initialize the google fit step detector, otherwise we use the standard android step sensor
+        initializeGFit();
+    }
+
+    /**
+     *  Build a {@link GoogleApiClient} that will authenticate the user and allow the application
+     *  to connect to Fitness APIs. The scopes included should match the scopes your app needs
+     *  (see documentation for details). Authentication will occasionally fail intentionally,
+     *  and in those cases, there will be a known resolution, which the OnConnectionFailedListener()
+     *  can address. Examples of this include the user never having signed in before, or having
+     *  multiple accounts on the device and needing to specify which account to use, etc.
+     */
+    private void initializeGFit() {
+        if (mGoogleServiceClient == null) {
+            mGoogleServiceClient = new GoogleApiClient.Builder(this)
+                    .addApi(Fitness.SENSORS_API)
+                    .addScope(new Scope(Scopes.FITNESS_ACTIVITY_READ_WRITE))
+                    .addConnectionCallbacks(
+                            new GoogleApiClient.ConnectionCallbacks() {
+                                @Override
+                                public void onConnected(Bundle bundle) {
+                                    Log.i(TAG, "Connected!!!");
+                                    // Now you can make calls to the Fitness APIs.
+                                    findFitnessDataSources();
+                                }
+
+                                @Override
+                                public void onConnectionSuspended(int i) {
+                                    // If your connection to the sensor gets lost at some point,
+                                    // you'll be able to determine the reason and react to it here.
+                                    if (i == GoogleApiClient.ConnectionCallbacks.CAUSE_NETWORK_LOST) {
+                                        Log.i(TAG, "Connection lost.  Cause: Network Lost.");
+                                    } else if (i
+                                            == GoogleApiClient.ConnectionCallbacks.CAUSE_SERVICE_DISCONNECTED) {
+                                        Log.i(TAG,
+                                                "Connection lost.  Reason: Service Disconnected");
+                                    }
+                                }
+                            }
+                    ).addOnConnectionFailedListener(new GoogleApiClient.OnConnectionFailedListener() {
+                        @Override
+                        public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+                            Log.i(TAG,"Connection to Google FIT FAILED!");
+                            if (connectionResult.hasResolution()) {
+                                try {
+                                    connectionResult.startResolutionForResult(WifiLocatorActivity.this, RESOLVE_CONNECTION_REQUEST_CODE);
+                                } catch (IntentSender.SendIntentException e) {
+                                    // Unable to resolve, message user appropriately
+                                }
+                            } else {
+                                Log.i(TAG, "No resolutions valid! Error code: "+connectionResult.getErrorCode());
+                            }
+
+                        }
+                    })
+                    .enableAutoManage(this, 0, new GoogleApiClient.OnConnectionFailedListener() {
+                        @Override
+                        public void onConnectionFailed(ConnectionResult result) {
+                            Log.i(TAG, "Google Play services connection failed. Cause: " +
+                                    result.toString());
+                        }
+                    })
+                    .build();
+        }
+        mGoogleServiceClient.connect();
+    }
+
+    /**
+     * Find available data sources and attempt to register on a specific {@link DataType}.
+     * If the application cares about a data type but doesn't care about the source of the data,
+     * this can be skipped entirely, instead calling
+     *     {@link com.google.android.gms.fitness.SensorsApi
+     *     #register(GoogleApiClient, SensorRequest, DataSourceListener)},
+     * where the {@link SensorRequest} contains the desired data type.
+     */
+    private void findFitnessDataSources() {
+        // [START find_data_sources]
+        // Note: Fitness.SensorsApi.findDataSources() requires the ACCESS_FINE_LOCATION permission.
+        Fitness.SensorsApi.findDataSources(mGoogleServiceClient, new DataSourcesRequest.Builder()
+                // At least one datatype must be specified.
+                .setDataTypes(DataType.TYPE_STEP_COUNT_CUMULATIVE)
+                // Can specify whether data type is raw or derived.
+                .setDataSourceTypes(DataSource.TYPE_RAW)
+                .build())
+                .setResultCallback(new ResultCallback<DataSourcesResult>() {
+                    @Override
+                    public void onResult(DataSourcesResult dataSourcesResult) {
+                        Log.i(TAG, "Result: " + dataSourcesResult.getStatus().toString());
+                        for (DataSource dataSource : dataSourcesResult.getDataSources()) {
+                            Log.i(TAG, "Data source found: " + dataSource.toString());
+                            Log.i(TAG, "Data Source type: " + dataSource.getDataType().getName());
+
+                            //Let's register a listener to receive Activity data!
+                            if (dataSource.getDataType().equals(DataType.TYPE_STEP_COUNT_CUMULATIVE)
+                                    && mSensorListener == null) {
+                                Log.i(TAG, "Data source for LOCATION_SAMPLE found!  Registering.");
+                                registerFitnessDataListener(dataSource,
+                                        DataType.TYPE_STEP_COUNT_CUMULATIVE);
+                            }
+                        }
+                    }
+                });
+        // [END find_data_sources]
+    }
+
+    /**
+     * Register a listener with the Sensors API for the provided {@link DataSource} and
+     * {@link DataType} combo.
+     */
+    private void registerFitnessDataListener(DataSource dataSource, DataType dataType) {
+        // [START register_data_listener]
+        mSensorListener = new OnDataPointListener() {
+            @Override
+            public void onDataPoint(DataPoint dataPoint) {
+                for (Field field : dataPoint.getDataType().getFields()) {
+                    Value val = dataPoint.getValue(field);
+                    Log.i(TAG, "Detected DataPoint field: " + field.getName());
+                    Log.i(TAG, "Detected DataPoint value: " + val);
+                }
+            }
+        };
+
+        Fitness.SensorsApi.add(
+                mGoogleServiceClient,
+                new SensorRequest.Builder()
+                        .setDataSource(dataSource) // Optional but recommended for custom data sets.
+                        .setDataType(dataType) // Can't be omitted.
+                        .setSamplingRate(2, TimeUnit.SECONDS)
+                        .build(),
+                mSensorListener)
+                .setResultCallback(new ResultCallback<Status>() {
+                    @Override
+                    public void onResult(Status status) {
+                        if (status.isSuccess()) {
+                            Log.i(TAG, "Listener registered!");
+                        } else {
+                            Log.i(TAG, "Listener not registered.");
+                        }
+                    }
+                });
+        // [END register_data_listener]
+    }
+
+    /**
+     * Unregister the listener with the Sensors API.
+     */
+    private void unregisterFitnessDataListener() {
+        if (mSensorListener == null) {
+            // This code only activates one listener at a time.  If there's no listener, there's
+            // nothing to unregister.
+            return;
+        }
+
+        // [START unregister_data_listener]
+        // Waiting isn't actually necessary as the unregister call will complete regardless,
+        // even if called from within onStop, but a callback can still be added in order to
+        // inspect the results.
+        Fitness.SensorsApi.remove(
+                mGoogleServiceClient,
+                mSensorListener)
+                .setResultCallback(new ResultCallback<Status>() {
+                    @Override
+                    public void onResult(Status status) {
+                        if (status.isSuccess()) {
+                            Log.i(TAG, "Listener was removed!");
+                        } else {
+                            Log.i(TAG, "Listener was not removed.");
+                        }
+                    }
+                });
+        // [END unregister_data_listener]
     }
 
     private void buildNoSensorsAlertMessage(){
@@ -231,7 +432,7 @@ public class WifiLocatorActivity extends AppCompatActivity {
         if (id == R.id.action_settings) {
             //show the Settings Activity
             Intent intent = new Intent(this, SettingsActivity.class);
-            startActivityForResult(intent,17930);
+            startActivityForResult(intent,SETTINGS_ACTIVITY_FINISHED);
 
             return true;
         }
@@ -245,9 +446,16 @@ public class WifiLocatorActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if(requestCode == 17930){
-            Log.d(TAG, "Settings activity finished!");
-            updatePreferenceValues();
+        switch (requestCode){
+            case SETTINGS_ACTIVITY_FINISHED:
+                Log.d(TAG, "Settings activity finished!");
+                updatePreferenceValues();
+                break;
+            case RESOLVE_CONNECTION_REQUEST_CODE:
+                if (resultCode == RESULT_OK) {
+                    mGoogleServiceClient.connect();
+                }
+                break;
         }
     }
 

@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.IntentSender;
 import android.graphics.PointF;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -17,13 +18,34 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.PowerManager;
+import android.support.annotation.NonNull;
+import android.support.design.widget.Snackbar;
 import android.util.Log;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesUtil;
+import com.google.android.gms.common.Scopes;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.Scope;
+import com.google.android.gms.common.api.Status;
+import com.google.android.gms.fitness.Fitness;
+import com.google.android.gms.fitness.data.DataPoint;
+import com.google.android.gms.fitness.data.DataSource;
+import com.google.android.gms.fitness.data.DataType;
+import com.google.android.gms.fitness.data.Field;
+import com.google.android.gms.fitness.data.Value;
+import com.google.android.gms.fitness.request.DataSourcesRequest;
+import com.google.android.gms.fitness.request.OnDataPointListener;
+import com.google.android.gms.fitness.request.SensorRequest;
+import com.google.android.gms.fitness.result.DataSourcesResult;
 
 import org.apache.commons.math3.linear.LUDecomposition;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 public class InertialPedestrianNavigationService extends Service implements SensorEventListener{
     public static final String TAG = "InertialNavService";
@@ -92,14 +114,19 @@ public class InertialPedestrianNavigationService extends Service implements Sens
         //initialize the sensors
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         rotationSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
-        stepSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
-        if(rotationSensor != null && stepSensor != null){
+        if(rotationSensor != null){
             //if the devices has both sensors, then register the listeners
             mSensorManager.registerListener(this, rotationSensor, SensorManager.SENSOR_DELAY_NORMAL);
-            mSensorManager.registerListener(this, stepSensor, SensorManager.SENSOR_DELAY_NORMAL,2000000);
         }
 
         app = (IndoorLocatorApplication) getApplication();
+    }
+
+    private void initializeStandardStepSensor(){
+        stepSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
+        if(stepSensor != null){
+            mSensorManager.registerListener(this, stepSensor, SensorManager.SENSOR_DELAY_NORMAL);
+        }
     }
 
     @Override
