@@ -9,12 +9,9 @@ import android.content.IntentFilter;
 import android.graphics.Color;
 import android.graphics.PointF;
 import android.location.Location;
-import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Message;
 import android.os.Messenger;
-import android.os.RemoteException;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -41,7 +38,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.Timer;
 import java.util.TimerTask;
 
 /**
@@ -167,6 +163,9 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
         //capture the google map object and store it in the gMap variable so that it can be used
         //outside this method
         gMap = googleMap;
+
+        displayMarkers();
+        displayPath();
     }
 
     @Override
@@ -230,55 +229,63 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
         @Override
         public void onReceive(Context context, Intent intent) {
             Log.d(TAG, "new location estimation ready!");
-            if(gMap != null){
-                //delete the previous marker, if one
+            displayMarkers();
+        }
+    };
+
+    private void displayMarkers(){
+        if(gMap != null && app.getEstimatedLocation()!=null){
+            //delete the previous marker, if one
                 /*if(currentMarker != null) {
                     currentMarker.remove();
                 }*/
-                //if marker already added in this position the previous time, skip the insertion
-                ComparableLocation cl = new ComparableLocation(app.getEstimatedLocation());
-                if(!estimatedLocationsSet.contains(cl)) {
-                    //add this cl to the set
-                    estimatedLocationsSet.add(cl);
+            //if marker already added in this position the previous time, skip the insertion
+            ComparableLocation cl = new ComparableLocation(app.getEstimatedLocation());
+            if(!estimatedLocationsSet.contains(cl)) {
+                //add this cl to the set
+                estimatedLocationsSet.add(cl);
 
-                    //add a marker on the map corresponding to the estimated position
-                    double lat = app.getEstimatedLocation().getLatitude();
-                    double lon = app.getEstimatedLocation().getLongitude();
-                    LatLng newMarkerPos = new LatLng(lat, lon);
-                    //set marker position, icon and title
-                    MarkerOptions markerOpt = new MarkerOptions();
-                    markerOpt.position(newMarkerPos);
-                    markerOpt.icon(BitmapDescriptorFactory.fromResource(R.drawable.position_marker));
-                    markerOpt.title(app.getEstimatedLocation().getExtras().getString("location_labels"));
-                    currentMarker = gMap.addMarker(markerOpt);
-                    gMap.moveCamera(CameraUpdateFactory.newLatLngZoom(newMarkerPos,20));
-                }
+                //add a marker on the map corresponding to the estimated position
+                double lat = app.getEstimatedLocation().getLatitude();
+                double lon = app.getEstimatedLocation().getLongitude();
+                LatLng newMarkerPos = new LatLng(lat, lon);
+                //set marker position, icon and title
+                MarkerOptions markerOpt = new MarkerOptions();
+                markerOpt.position(newMarkerPos);
+                markerOpt.icon(BitmapDescriptorFactory.fromResource(R.drawable.position_marker));
+                markerOpt.title(app.getEstimatedLocation().getExtras().getString("location_labels"));
+                currentMarker = gMap.addMarker(markerOpt);
+                gMap.moveCamera(CameraUpdateFactory.newLatLngZoom(newMarkerPos,20));
             }
         }
-    };
+    }
+
+    private void displayPath(){
+        if(gMap != null && !app.getPositionsList().isEmpty()){
+            Log.d(TAG, "***** list contains: "+app.getPositionsList().size()+" positions");
+            List<LatLng> pathPoints = new ArrayList<>();
+            for(PointF p : app.getPositionsList()){
+                pathPoints.add(new LatLng(p.y, p.x));
+            }
+            if(userPath == null){
+                PolylineOptions opt = new PolylineOptions();
+                opt.width(5);
+                opt.color(Color.BLUE);
+                opt.addAll(pathPoints);
+                opt.endCap(new CustomCap(BitmapDescriptorFactory.fromResource(R.drawable.silver_arrow)));
+                userPath = gMap.addPolyline(opt);
+            }
+
+            //redraw all the path points
+            userPath.setPoints(pathPoints);
+        }
+    }
 
     private final BroadcastReceiver inertialPositionAvailable = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             Log.d(TAG, "new inertial position ready! "+ app.getPositionsList().get(app.getPositionsList().size()-1).y +"; "+ app.getPositionsList().get(app.getPositionsList().size()-1).x);
-            if(gMap != null){
-                Log.d(TAG, "***** list contains: "+app.getPositionsList().size()+" positions");
-                List<LatLng> pathPoints = new ArrayList<>();
-                for(PointF p : app.getPositionsList()){
-                    pathPoints.add(new LatLng(p.y, p.x));
-                }
-                if(userPath == null){
-                    PolylineOptions opt = new PolylineOptions();
-                    opt.width(5);
-                    opt.color(Color.BLUE);
-                    opt.addAll(pathPoints);
-                    opt.endCap(new CustomCap(BitmapDescriptorFactory.fromResource(R.drawable.silver_arrow)));
-                    userPath = gMap.addPolyline(opt);
-                }
-
-                //redraw all the path points
-                userPath.setPoints(pathPoints);
-            }
+            displayPath();
         }
     };
 }

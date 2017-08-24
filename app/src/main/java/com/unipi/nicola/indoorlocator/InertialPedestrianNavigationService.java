@@ -16,7 +16,6 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
-import android.os.PowerManager;
 import android.util.Log;
 
 import org.apache.commons.math3.linear.LUDecomposition;
@@ -25,7 +24,7 @@ import org.apache.commons.math3.linear.RealMatrix;
 
 import java.util.Arrays;
 
-public class InertialPedestrianNavigationService extends Service implements SensorEventListener{
+public class InertialPedestrianNavigationService extends Service implements SensorEventListener, StepListener{
     public static final String TAG = "InertialNavService";
 
     //messages
@@ -40,10 +39,11 @@ public class InertialPedestrianNavigationService extends Service implements Sens
     IndoorLocatorApplication app;
 
     private static final int CALIBRATION_SAMPLES = 5;
+    private static final float PEDOMETER_SENSITIVITY = 10.0f;
 
     private SensorManager mSensorManager;
     private Sensor rotationSensor;
-    private Sensor stepSensor;
+    private Sensor accelerometerSensor;
 
     //counters for samples to be acquired while calibrating
     private int acquireCalibrationSamples = -1;
@@ -92,11 +92,15 @@ public class InertialPedestrianNavigationService extends Service implements Sens
         //initialize the sensors
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         rotationSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
-        stepSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
-        if(rotationSensor != null && stepSensor != null){
+        accelerometerSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        if(rotationSensor != null && accelerometerSensor != null){
             //if the devices has both sensors, then register the listeners
             mSensorManager.registerListener(this, rotationSensor, SensorManager.SENSOR_DELAY_NORMAL);
-            mSensorManager.registerListener(this, stepSensor, SensorManager.SENSOR_DELAY_NORMAL,2000000);
+
+            StepDetector stepDetector = new StepDetector();
+            stepDetector.addStepListener(this);
+            stepDetector.setSensitivity(PEDOMETER_SENSITIVITY);
+            mSensorManager.registerListener(stepDetector, accelerometerSensor, SensorManager.SENSOR_DELAY_NORMAL);
         }
 
         app = (IndoorLocatorApplication) getApplication();
@@ -226,7 +230,7 @@ public class InertialPedestrianNavigationService extends Service implements Sens
 
             SensorManager.getOrientation(coefficientsFromRealMatrix(northToUfdRotationMatrix), rotationAngles);
             //Log.d(TAG,"Rotation matrix det: "+new LUDecomposition(northToUfdRotationMatrix).getDeterminant()+"; Azimuth:"+rotationAngles[0]+"; Pitch:"+rotationAngles[1]+"; Roll:"+rotationAngles[2]);
-            Log.d(TAG,"Rotated [0 1 0] vector: "+Arrays.toString(northToUfdRotationMatrix.operate(new double[]{0, 1, 0})));
+            //Log.d(TAG,"Rotated [0 1 0] vector: "+Arrays.toString(northToUfdRotationMatrix.operate(new double[]{0, 1, 0})));
             PointF direction = new PointF(-(float)Math.sin(-rotationAngles[0]), (float)Math.cos(-rotationAngles[0]));
             //TODO: calculate the UFD so that phone can be held in any position
             //NOTE: direction must be a normalized vector
@@ -235,17 +239,20 @@ public class InertialPedestrianNavigationService extends Service implements Sens
             filterDirection(direction);
 
         }
-        if(event.sensor.getType() == Sensor.TYPE_STEP_DETECTOR){
-            stepCounter++;
-            //update the position using the current direction. position is needed as lat lon coordinates
-            //https://stackoverflow.com/questions/1253499/simple-calculations-for-working-with-lat-lon-km-distance
-            if(filteredDirection != null && actualPosition != null) {
-                actualPosition.y += filteredDirection.y * stepLength * (1 / LAT_TO_METERS);
-                actualPosition.x += filteredDirection.x * stepLength * (1 / (LONG_TO_METERS * Math.cos(actualPosition.y * Math.PI / 180)));
-                if (stepCounter % updateAfterNumSteps == 0) {
-                    //send the new estimated position in a broadcast intent
-                    sendInertialPosition();
-                }
+    }
+
+    @Override
+    public void onStep() {
+        //called when a new step is detected
+        stepCounter++;
+        //update the position using the current direction. position is needed as lat lon coordinates
+        //https://stackoverflow.com/questions/1253499/simple-calculations-for-working-with-lat-lon-km-distance
+        if(filteredDirection != null && actualPosition != null) {
+            actualPosition.y += filteredDirection.y * stepLength * (1 / LAT_TO_METERS);
+            actualPosition.x += filteredDirection.x * stepLength * (1 / (LONG_TO_METERS * Math.cos(actualPosition.y * Math.PI / 180)));
+            if (stepCounter % updateAfterNumSteps == 0) {
+                //send the new estimated position in a broadcast intent
+                sendInertialPosition();
             }
         }
     }

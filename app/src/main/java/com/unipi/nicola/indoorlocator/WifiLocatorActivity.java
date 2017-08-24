@@ -125,8 +125,8 @@ public class WifiLocatorActivity extends AppCompatActivity {
         //Starts the Inertial Navigation Service only if there are the right sensors
         SensorManager mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         Sensor rotationSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
-        Sensor stepSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
-        if(rotationSensor != null && stepSensor != null){
+        Sensor accelerometerSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        if(rotationSensor != null && accelerometerSensor != null){
             Log.d(TAG, "Starting Inertial navigation service");
 
             //Starts the Inertial Navigation Service
