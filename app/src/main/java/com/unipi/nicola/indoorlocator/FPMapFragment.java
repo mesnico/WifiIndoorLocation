@@ -176,12 +176,7 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
 
             //reset the view and all related data structures
             //sends an hello message so that the service knows who he is talking to
-            Message msg = Message.obtain(null, InertialPedestrianNavigationService.MSG_RESET);
-            try {
-                mInertialNavigationService.send(msg);
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
+            Utils.sendMessage(mInertialNavigationService,InertialPedestrianNavigationService.MSG_RESET, null, null);
             estimatedLocationsSet.clear();
             gMap.clear();
             userPath = null;
@@ -203,24 +198,16 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             //send a start calibration message and starts a timer
-                            Message msg = Message.obtain(null, InertialPedestrianNavigationService.MSG_START_CALIBRATION);
-                            try {
-                                mInertialNavigationService.send(msg);
-                            } catch (RemoteException e) {
-                                e.printStackTrace();
-                            }
+                            Utils.sendMessage(mInertialNavigationService, InertialPedestrianNavigationService.MSG_START_CALIBRATION, null, null);
+
                             calibrationButton.setEnabled(false);
 
                             //starts the timer after which the calibration must end
                             new Handler().postDelayed(new TimerTask() {
                                 @Override
                                 public void run() {
-                                    Message msg = Message.obtain(null, InertialPedestrianNavigationService.MSG_END_CALIBRATION);
-                                    try {
-                                        mInertialNavigationService.send(msg);
-                                    } catch (RemoteException e) {
-                                        e.printStackTrace();
-                                    }
+                                    Utils.sendMessage(mInertialNavigationService, InertialPedestrianNavigationService.MSG_END_CALIBRATION, null, null);
+
                                     calibrationButton.setEnabled(true);
                                     Toast.makeText(getContext(),"Calibration OK!",Toast.LENGTH_SHORT).show();
                                 }

@@ -187,13 +187,7 @@ public class WifiFingerprintingService extends Service {
                 }
 
                 //send notification to the fp fragment
-                Message msg = Message.obtain(null, FPStoreFragment.MSG_NEXT_STORING_ITERATION);
-                msg.setData(b);
-                try {
-                    mStoreFragment.send(msg);
-                } catch (RemoteException e) {
-                    e.printStackTrace();
-                }
+                Utils.sendMessage(mStoreFragment, FPStoreFragment.MSG_NEXT_STORING_ITERATION, b, null);
             }
 
             /* in any case, matching mode is enabled (storingCounter = -1): the APs sensed must be matched against

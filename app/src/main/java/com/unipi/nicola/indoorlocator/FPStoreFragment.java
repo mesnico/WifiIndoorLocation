@@ -121,13 +121,7 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
         mFingerprintingService = b.getParcelable("mFingerprintingService");
 
         //sends an hello message so that the service knows who he is talking to
-        Message msg = Message.obtain(null, WifiFingerprintingService.MSG_STORE_FRAGMENT_HELLO);
-        try {
-            msg.replyTo = mMessenger;
-            mFingerprintingService.send(msg);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
+        Utils.sendMessage(mFingerprintingService, WifiFingerprintingService.MSG_STORE_FRAGMENT_HELLO, null, mMessenger);
     }
 
     @Override
@@ -183,13 +177,7 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
             b.putParcelable("current_location", location);
 
             //send request to the service
-            Message msg = Message.obtain(null, WifiFingerprintingService.MSG_STORE_FINGERPRINT);
-            msg.setData(b);
-            try {
-                mFingerprintingService.send(msg);
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
+            Utils.sendMessage(mFingerprintingService, WifiFingerprintingService.MSG_STORE_FINGERPRINT, b, null);
         }
     }
 

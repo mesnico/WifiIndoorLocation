@@ -183,8 +183,13 @@ public class WifiLocatorActivity extends AppCompatActivity {
     @Override
     public void onDestroy(){
         super.onDestroy();
-        unbindService(mFingerprintingServiceConnection);
-        unbindService(mInertialServiceConnection);
+        if(mFingerprintingService != null) {
+            unbindService(mFingerprintingServiceConnection);
+        }
+        if(mInertialNavigationService != null){
+            unbindService(mInertialServiceConnection);
+        }
+
 
         //stop the services
         if(inertialNavigationService != null){
@@ -333,7 +338,6 @@ public class WifiLocatorActivity extends AppCompatActivity {
 
     private void updatePreferenceValues(){
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-        Message msg;
         Bundle b;
 
         if(mFingerprintingService != null) {
@@ -341,7 +345,6 @@ public class WifiLocatorActivity extends AppCompatActivity {
 
             //signal normalization preference
             Boolean normalizeSignal = sharedPref.getBoolean(SettingsActivity.PREF_SIGNAL_NORMALIZATION_KEY, false);
-            msg = Message.obtain(null, WifiFingerprintingService.MSG_PARAMETERS_CHANGED);
             b = new Bundle();
 
             b.putBoolean("signal_normalization", normalizeSignal);
@@ -362,17 +365,11 @@ public class WifiLocatorActivity extends AppCompatActivity {
             int storingIterations = Integer.valueOf(sharedPref.getString(SettingsActivity.PREF_STORING_ITERATIONS_KEY, "4"));
             b.putInt("storing_iterations", storingIterations);
 
-            msg.setData(b);
-            try {
-                mFingerprintingService.send(msg);
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
+            Utils.sendMessage(mFingerprintingService, WifiFingerprintingService.MSG_PARAMETERS_CHANGED, b, null);
         }
 
         if(mInertialNavigationService != null) {
             //send inertial navigation settings to inertial navigation service
-            msg = Message.obtain(null, InertialPedestrianNavigationService.MSG_PARAMETERS_CHANGED);
             b = new Bundle();
 
             float beta = Float.valueOf(sharedPref.getString(SettingsActivity.PREF_BETA, "0.5"));
@@ -383,12 +380,8 @@ public class WifiLocatorActivity extends AppCompatActivity {
 
             int updateAfterNumSteps = Integer.valueOf(sharedPref.getString(SettingsActivity.PREF_UPDATE_AFTER_NUM_STEPS, "3"));
             b.putInt("update_after_num_steps", updateAfterNumSteps);
-            msg.setData(b);
-            try {
-                mInertialNavigationService.send(msg);
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
+
+            Utils.sendMessage(mInertialNavigationService, InertialPedestrianNavigationService.MSG_PARAMETERS_CHANGED, b, null);
         }
     }
 

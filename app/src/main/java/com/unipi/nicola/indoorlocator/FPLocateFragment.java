@@ -161,15 +161,10 @@ public class FPLocateFragment extends Fragment implements View.OnClickListener, 
             Log.d(TAG, "Location service OFF!");
         }
 
-        Message msg = Message.obtain(null, WifiFingerprintingService.MSG_LOCATE_ONOFF);
         Bundle b = new Bundle();
         b.putBoolean("locate_onoff", isChecked);
-        msg.setData(b);
-        try {
-            mFingerprintingService.send(msg);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
+
+        Utils.sendMessage(mFingerprintingService, WifiFingerprintingService.MSG_LOCATE_ONOFF, b, null);
     }
 
     private void updateFingerprintList() {

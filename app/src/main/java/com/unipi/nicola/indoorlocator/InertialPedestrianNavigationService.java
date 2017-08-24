@@ -206,8 +206,8 @@ public class InertialPedestrianNavigationService extends Service implements Sens
                     Log.d(TAG, "calibration matrix in state "+calibrationState+" has been computed");
                     if(calibrationState == 1){
                         //perform the computation of the ufd to phone transform
-                        ufdToPhoneRotationMatrix = calibrationMatrices[0].multiply(calibrationMatrices[1].transpose());
-                        Log.d(TAG, "The transpose has determinant: "+new LUDecomposition(calibrationMatrices[1].transpose()).getDeterminant());
+                        ufdToPhoneRotationMatrix = calibrationMatrices[0].transpose().multiply(calibrationMatrices[1]);
+                        Log.d(TAG, "The transpose has determinant: "+new LUDecomposition(calibrationMatrices[0].transpose()).getDeterminant());
                         Log.d(TAG, "ufd to phone matrix computed! It has determinant: "+new LUDecomposition(ufdToPhoneRotationMatrix).getDeterminant());
                         printMatrix(ufdToPhoneRotationMatrix);
                     }
@@ -225,7 +225,8 @@ public class InertialPedestrianNavigationService extends Service implements Sens
             RealMatrix northToUfdRotationMatrix = realMatrixFromCoefficients(rotationMatrix).multiply(ufdToPhoneRotationMatrix.transpose());
 
             SensorManager.getOrientation(coefficientsFromRealMatrix(northToUfdRotationMatrix), rotationAngles);
-            Log.d(TAG,"Rotation matrix det: "+new LUDecomposition(northToUfdRotationMatrix).getDeterminant()+"; Azimuth:"+rotationAngles[0]+"; Pitch:"+rotationAngles[1]+"; Roll:"+rotationAngles[2]);
+            //Log.d(TAG,"Rotation matrix det: "+new LUDecomposition(northToUfdRotationMatrix).getDeterminant()+"; Azimuth:"+rotationAngles[0]+"; Pitch:"+rotationAngles[1]+"; Roll:"+rotationAngles[2]);
+            Log.d(TAG,"Rotated [0 1 0] vector: "+Arrays.toString(northToUfdRotationMatrix.operate(new double[]{0, 1, 0})));
             PointF direction = new PointF(-(float)Math.sin(-rotationAngles[0]), (float)Math.cos(-rotationAngles[0]));
             //TODO: calculate the UFD so that phone can be held in any position
             //NOTE: direction must be a normalized vector
