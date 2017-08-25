@@ -11,6 +11,7 @@ import android.graphics.PointF;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Message;
 import android.os.Messenger;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -47,7 +48,8 @@ import java.util.TimerTask;
 public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.OnClickListener {
     public static final String TAG = "FPMapFragment";
 
-    private static final int CALIBRATION_TIME = 5; //seconds
+    //messages
+    public static final int MSG_CALIBRATION_COMPLETED = 1;
 
     private IndoorLocatorApplication app;
     private GoogleMap gMap = null;
@@ -58,6 +60,7 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
      * to communicate with the Fingerprinting Service
      */
     private Messenger mInertialNavigationService;
+    private Messenger mMessenger = new Messenger(new FPMapFragment.IncomingHandler());
 
     //the current shown marker
     private Marker currentMarker;
@@ -98,6 +101,9 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
     public void setArguments(Bundle b) {
         //get the messenger from the activity
         mInertialNavigationService = b.getParcelable("mInertialNavigationService");
+
+        //sends an hello message so that the service knows who he is talking to
+        Utils.sendMessage(mInertialNavigationService, WifiFingerprintingService.MSG_HELLO_FROM_STORE_FRAGMENT, null, mMessenger);
     }
 
     @Override
@@ -147,6 +153,15 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        Log.d(TAG, "onResume called!");
+
+        displayMarkers();
+        displayPath();
+    }
+
+    @Override
     public void onDestroyView() {
         super.onDestroyView();
         /*gMap.clear();
@@ -191,26 +206,14 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
         }
         if(v.getId() == R.id.calibrate){
             final AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-            builder.setMessage("Keep the phone in portrait mode. Then, in "+CALIBRATION_TIME+" seconds, put it wherever you prefer")
+            builder.setMessage("Keep the phone in portrait mode. After the first vibration, put it wherever you prefer. After the second vibration, you'll be ready!")
                     .setCancelable(false)
                     .setPositiveButton("Ok, start calibration", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             //send a start calibration message and starts a timer
                             Utils.sendMessage(mInertialNavigationService, InertialPedestrianNavigationService.MSG_START_CALIBRATION, null, null);
-
                             calibrationButton.setEnabled(false);
-
-                            //starts the timer after which the calibration must end
-                            new Handler().postDelayed(new TimerTask() {
-                                @Override
-                                public void run() {
-                                    Utils.sendMessage(mInertialNavigationService, InertialPedestrianNavigationService.MSG_END_CALIBRATION, null, null);
-
-                                    calibrationButton.setEnabled(true);
-                                    Toast.makeText(getContext(),"Calibration OK!",Toast.LENGTH_SHORT).show();
-                                }
-                            }, CALIBRATION_TIME*1000);
                         }
                     })
                     .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -288,4 +291,19 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
             displayPath();
         }
     };
+
+    /**
+     * handler for messages coming from InertialPedestrianNavigationService
+     */
+    class IncomingHandler extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case MSG_CALIBRATION_COMPLETED:
+                    calibrationButton.setEnabled(true);
+                    Toast.makeText(getContext(), "Calibration OK!", Toast.LENGTH_SHORT).show();
+                    break;
+            }
+        }
+    }
 }

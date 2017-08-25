@@ -60,7 +60,7 @@ public abstract class FingerprintDistance {
         List<WifiFingerprint> filtered = new ArrayList<>();
         int k = 0;
         for(WifiFingerprint o : orderedFingerprints){
-            if(k > maxK || o.getDistance() > maxDistance) break;
+            if(k >= maxK || o.getDistance() > maxDistance) break;
             filtered.add(o);
             k++;
         }

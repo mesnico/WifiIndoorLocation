@@ -13,7 +13,6 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
-import android.os.RemoteException;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -35,7 +34,7 @@ public class WifiFingerprintingService extends Service {
     //maximum number of returned fingerprints after ordering
     static final int MAX_FINGERPRINTS = 10;
 
-    static final int MSG_STORE_FRAGMENT_HELLO =                                1;
+    static final int MSG_HELLO_FROM_STORE_FRAGMENT =                                1;
     static final int MSG_STORE_FINGERPRINT =                    2;
     static final int MSG_PARAMETERS_CHANGED =                   3;
     static final int MSG_LOCATE_ONOFF =                         4;
@@ -273,7 +272,7 @@ public class WifiFingerprintingService extends Service {
         public void handleMessage(Message msg) {
             Bundle b = msg.getData();
             switch (msg.what) {
-                case MSG_STORE_FRAGMENT_HELLO:
+                case MSG_HELLO_FROM_STORE_FRAGMENT:
                     //store the interlocutor
                     mStoreFragment = msg.replyTo;
                     Log.d(TAG, "Hello message received from store fragment!");

@@ -49,6 +49,8 @@ public class WifiLocatorActivity extends AppCompatActivity {
     Messenger mFingerprintingService = null;
     Messenger mInertialNavigationService = null;
 
+    private static final int SETTINGS_ACTIVITY = 17930;
+
     //The fragment actually loaded
     Fragment actualFragment = null;
     //Reference to each individual fragment
@@ -236,7 +238,7 @@ public class WifiLocatorActivity extends AppCompatActivity {
         if (id == R.id.action_settings) {
             //show the Settings Activity
             Intent intent = new Intent(this, SettingsActivity.class);
-            startActivityForResult(intent,17930);
+            startActivityForResult(intent,SETTINGS_ACTIVITY);
 
             return true;
         }
@@ -250,7 +252,7 @@ public class WifiLocatorActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if(requestCode == 17930){
+        if(requestCode == SETTINGS_ACTIVITY){
             Log.d(TAG, "Settings activity finished!");
             updatePreferenceValues();
         }

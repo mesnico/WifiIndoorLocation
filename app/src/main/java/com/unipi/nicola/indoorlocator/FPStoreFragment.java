@@ -15,7 +15,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Messenger;
-import android.os.RemoteException;
 import android.support.v4.app.Fragment;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -31,7 +30,6 @@ import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.ToggleButton;
 
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.common.GooglePlayServicesRepairableException;
@@ -121,7 +119,7 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
         mFingerprintingService = b.getParcelable("mFingerprintingService");
 
         //sends an hello message so that the service knows who he is talking to
-        Utils.sendMessage(mFingerprintingService, WifiFingerprintingService.MSG_STORE_FRAGMENT_HELLO, null, mMessenger);
+        Utils.sendMessage(mFingerprintingService, WifiFingerprintingService.MSG_HELLO_FROM_STORE_FRAGMENT, null, mMessenger);
     }
 
     @Override

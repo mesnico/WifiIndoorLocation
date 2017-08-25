@@ -16,34 +16,41 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
+import android.os.Vibrator;
 import android.util.Log;
+import android.widget.Toast;
 
 import org.apache.commons.math3.linear.LUDecomposition;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 
 import java.util.Arrays;
+import java.util.TimerTask;
 
 public class InertialPedestrianNavigationService extends Service implements SensorEventListener, StepListener{
     public static final String TAG = "InertialNavService";
 
     //messages
-    public static final int MSG_RESET = 1;
-    public static final int MSG_PARAMETERS_CHANGED = 2;
-    public static final int MSG_START_CALIBRATION = 3;
-    public static final int MSG_END_CALIBRATION = 4;
+    public static final int MSG_HELLO_FROM_MAP_FRAGMENT = 1;
+    public static final int MSG_RESET = 2;
+    public static final int MSG_PARAMETERS_CHANGED = 3;
+    public static final int MSG_START_CALIBRATION = 4;
 
     private static final float LAT_TO_METERS = 110.574f * 1000;
     private static final float LONG_TO_METERS = 111.320f * 1000;
 
     IndoorLocatorApplication app;
+    Messenger mMapFragment;
 
-    private static final int CALIBRATION_SAMPLES = 5;
+    private static final int CALIBRATION_SAMPLES = 15;
+    private static final int CALIBRATION_TIME = 7; //seconds
     private static final float PEDOMETER_SENSITIVITY = 10.0f;
 
     private SensorManager mSensorManager;
     private Sensor rotationSensor;
     private Sensor accelerometerSensor;
+
+    private Vibrator vibrator; //used for calibration feedback
 
     //counters for samples to be acquired while calibrating
     private int acquireCalibrationSamples = -1;
@@ -64,7 +71,6 @@ public class InertialPedestrianNavigationService extends Service implements Sens
     //The messenger object that must be passed to the activity in order to contact this service
     private Messenger mMessenger = new Messenger(new IncomingHandler());
 
-    //TODO: modifiable by preference
     //Amount of smoothness for direction filtering
     float beta = 0.5f;
     //Length of a step
@@ -102,6 +108,8 @@ public class InertialPedestrianNavigationService extends Service implements Sens
             stepDetector.setSensitivity(PEDOMETER_SENSITIVITY);
             mSensorManager.registerListener(stepDetector, accelerometerSensor, SensorManager.SENSOR_DELAY_NORMAL);
         }
+
+        vibrator = (Vibrator) getBaseContext().getSystemService(Context.VIBRATOR_SERVICE);
 
         app = (IndoorLocatorApplication) getApplication();
     }
@@ -143,6 +151,12 @@ public class InertialPedestrianNavigationService extends Service implements Sens
         public void handleMessage(Message msg) {
             Bundle b = msg.getData();
             switch (msg.what) {
+                case MSG_HELLO_FROM_MAP_FRAGMENT:
+                    //store the interlocutor
+                    mMapFragment = msg.replyTo;
+                    Log.d(TAG, "Hello message received from map fragment!");
+                    break;
+
                 case MSG_RESET:
                     Log.d(TAG,"Reset command received!");
                     app.getPositionsList().clear();
@@ -162,10 +176,15 @@ public class InertialPedestrianNavigationService extends Service implements Sens
                 case MSG_START_CALIBRATION:
                     acquireCalibrationSamples = 0;
                     calibrationState = 0; //acquire north to ufd matrix
-                    break;
-                case MSG_END_CALIBRATION:
-                    acquireCalibrationSamples = 0;
-                    calibrationState = 1; //acquire north to phone matrix
+
+                    //starts the timer after which the calibration must end
+                    new Handler().postDelayed(new TimerTask() {
+                        @Override
+                        public void run() {
+                            acquireCalibrationSamples = 0;
+                            calibrationState = 1; //acquire north to phone matrix
+                        }
+                    }, CALIBRATION_TIME*1000);
                     break;
             }
         }
@@ -208,12 +227,21 @@ public class InertialPedestrianNavigationService extends Service implements Sens
                     //at the end, compute the mean of the matrix
                     calibrationMatrices[calibrationState] = calibrationMatrices[calibrationState].scalarMultiply(1/(double)CALIBRATION_SAMPLES);
                     Log.d(TAG, "calibration matrix in state "+calibrationState+" has been computed");
+                    // Vibrate for 1 second, as tattile feedback
+                    try {
+                        vibrator.vibrate(1000);
+                    } catch(SecurityException e){
+                        e.printStackTrace();
+                    }
                     if(calibrationState == 1){
                         //perform the computation of the ufd to phone transform
                         ufdToPhoneRotationMatrix = calibrationMatrices[0].transpose().multiply(calibrationMatrices[1]);
                         Log.d(TAG, "The transpose has determinant: "+new LUDecomposition(calibrationMatrices[0].transpose()).getDeterminant());
                         Log.d(TAG, "ufd to phone matrix computed! It has determinant: "+new LUDecomposition(ufdToPhoneRotationMatrix).getDeterminant());
                         printMatrix(ufdToPhoneRotationMatrix);
+
+                        //notify the map fragment that the calibration is ok
+                        Utils.sendMessage(mMapFragment, FPMapFragment.MSG_CALIBRATION_COMPLETED, null, null);
                     }
                     calibrationState = -1;
                 } else {
