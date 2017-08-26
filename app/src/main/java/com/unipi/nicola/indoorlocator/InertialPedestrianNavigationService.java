@@ -16,6 +16,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
+import android.os.PowerManager;
 import android.os.Vibrator;
 import android.util.Log;
 import android.widget.Toast;
@@ -42,9 +43,9 @@ public class InertialPedestrianNavigationService extends Service implements Sens
     IndoorLocatorApplication app;
     Messenger mMapFragment;
 
-    private static final int CALIBRATION_SAMPLES = 15;
+    private static final int CALIBRATION_SAMPLES = 12;
     private static final int CALIBRATION_TIME = 7; //seconds
-    private static final float PEDOMETER_SENSITIVITY = 10.0f;
+    private static final float PEDOMETER_SENSITIVITY = 15.0f;
 
     private SensorManager mSensorManager;
     private Sensor rotationSensor;
@@ -60,6 +61,8 @@ public class InertialPedestrianNavigationService extends Service implements Sens
     private PointF actualPosition;
     private PointF filteredDirection;
     int stepCounter = 0;
+
+    PowerManager.WakeLock wakeLock;
 
     //transform matrices among the world-phone-user coordinate systems
     RealMatrix[] calibrationMatrices = new RealMatrix[2]; //index 0: northToUFDRotMatrix; index 1: northToPhoneCalibrationMatrix
@@ -111,12 +114,18 @@ public class InertialPedestrianNavigationService extends Service implements Sens
 
         vibrator = (Vibrator) getBaseContext().getSystemService(Context.VIBRATOR_SERVICE);
 
+        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
+                "MyWakelockTag");
+        wakeLock.acquire();
+
         app = (IndoorLocatorApplication) getApplication();
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
+        wakeLock.release();
         unregisterReceiver(locationEstimationReadyReceiver);
     }
 
@@ -258,7 +267,7 @@ public class InertialPedestrianNavigationService extends Service implements Sens
 
             SensorManager.getOrientation(coefficientsFromRealMatrix(northToUfdRotationMatrix), rotationAngles);
             //Log.d(TAG,"Rotation matrix det: "+new LUDecomposition(northToUfdRotationMatrix).getDeterminant()+"; Azimuth:"+rotationAngles[0]+"; Pitch:"+rotationAngles[1]+"; Roll:"+rotationAngles[2]);
-            //Log.d(TAG,"Rotated [0 1 0] vector: "+Arrays.toString(northToUfdRotationMatrix.operate(new double[]{0, 1, 0})));
+            Log.d(TAG,"Rotated [0 1 0] vector: "+Arrays.toString(northToUfdRotationMatrix.operate(new double[]{0, 1, 0})));
             PointF direction = new PointF(-(float)Math.sin(-rotationAngles[0]), (float)Math.cos(-rotationAngles[0]));
             //TODO: calculate the UFD so that phone can be held in any position
             //NOTE: direction must be a normalized vector
