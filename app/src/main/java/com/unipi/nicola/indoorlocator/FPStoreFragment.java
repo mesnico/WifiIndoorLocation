@@ -224,6 +224,8 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
                 .setNegativeButton("No", new DialogInterface.OnClickListener() {
                     public void onClick(final DialogInterface dialog, final int id) {
                         gpsOn.setChecked(false);
+                        pickPlace.setEnabled(true);
+                        alt.setEnabled(true);
                         dialog.cancel();
                     }
                 });

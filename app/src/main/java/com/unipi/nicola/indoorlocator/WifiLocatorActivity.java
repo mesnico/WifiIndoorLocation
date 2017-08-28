@@ -20,6 +20,8 @@ import android.preference.PreferenceManager;
 import android.support.design.widget.TabLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.FragmentTabHost;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 
@@ -39,11 +41,15 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupWindow;
+import android.widget.TabHost;
 import android.widget.TextView;
 
 import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprint;
 
-public class WifiLocatorActivity extends AppCompatActivity {
+public class WifiLocatorActivity extends AppCompatActivity implements TabHost.OnTabChangeListener{
+    public static final String MAP_TAG = "map";
+    public static final String LOCATE_TAG = "locate";
+    public static final String STORE_TAG = "store";
 
     //Messenger for communicating with the fingerprinting service and inertial navigation service
     Messenger mFingerprintingService = null;
@@ -51,34 +57,24 @@ public class WifiLocatorActivity extends AppCompatActivity {
 
     private static final int SETTINGS_ACTIVITY = 17930;
 
-    //The fragment actually loaded
-    Fragment actualFragment = null;
     //Reference to each individual fragment
     Fragment mapFragment;
     Fragment storeFragment;
     Fragment locateFragment;
 
+    String previousFragmentTag = MAP_TAG;   //the map tag is the one initially loaded
+    //flag used as semaphore that enables tab updating only when the activity state has been restored
+    //this is due to the fact that onTabChange is called before the onCreate, thus possibly working on
+    //the wrong state (the previous is not restored yet)
+    boolean canUpdateTab = false;
+
     //Services started by this activity
     Intent locatorService;
     Intent inertialNavigationService;
 
+    FragmentTabHost mTabHost;
+
     private final String TAG = "WifiLocatorActivity";
-
-
-    /**
-     * The {@link android.support.v4.view.PagerAdapter} that will provide
-     * fragments for each of the sections. We use a
-     * {@link FragmentPagerAdapter} derivative, which will keep every
-     * loaded fragment in memory. If this becomes too memory intensive, it
-     * may be best to switch to a
-     * {@link android.support.v4.app.FragmentStatePagerAdapter}.
-     */
-    private SectionsPagerAdapter mSectionsPagerAdapter;
-
-    /**
-     * The {@link ViewPager} that will host the section contents.
-     */
-    private ViewPager mViewPager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,32 +84,18 @@ public class WifiLocatorActivity extends AppCompatActivity {
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        // Create the adapter that will return a fragment for each of the three
-        // primary sections of the activity.
-        mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
 
-        // Set up the ViewPager with the sections adapter.
-        mViewPager = (ViewPager) findViewById(R.id.container);
-        mViewPager.setAdapter(mSectionsPagerAdapter);
-
-        TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
-        tabLayout.setupWithViewPager(mViewPager);
-
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
+        initTabs();
 
         //restore the previously saved fragments
         if(savedInstanceState != null){
             mapFragment = getSupportFragmentManager().getFragment(savedInstanceState, "mapFragment");
             storeFragment = getSupportFragmentManager().getFragment(savedInstanceState, "storeFragment");
             locateFragment = getSupportFragmentManager().getFragment(savedInstanceState, "locateFragment");
+            previousFragmentTag = savedInstanceState.getString("previousFragmentTag");
         }
+        canUpdateTab = true;
+        mTabHost.onTabChanged(previousFragmentTag);
 
         //Starts the Fingerprinting Service
         locatorService = new Intent(this, WifiFingerprintingService.class);
@@ -147,6 +129,66 @@ public class WifiLocatorActivity extends AppCompatActivity {
         if (!manager.isWifiEnabled()) {
             buildAlertMessageNoWifi();
         }
+    }
+
+    private void initTabs(){
+        mTabHost = (FragmentTabHost)findViewById(android.R.id.tabhost);
+        mTabHost.setup(this, getSupportFragmentManager(), android.R.id.tabcontent);
+        mTabHost.setOnTabChangedListener(this);
+
+        //the default content loaded into the fragment container
+        //it will be completely loaded when the tab is changed
+        TabHost.TabContentFactory tabHostContentFactory = new TabHost.TabContentFactory() {
+            @Override
+            public View createTabContent(String tag) {
+                return findViewById(android.R.id.tabcontent);
+            }
+        };
+
+        mTabHost.addTab(mTabHost.newTabSpec(MAP_TAG).setIndicator("Map").setContent(tabHostContentFactory));
+        mTabHost.addTab(mTabHost.newTabSpec(LOCATE_TAG).setIndicator("Contacts").setContent(tabHostContentFactory));
+        mTabHost.addTab(mTabHost.newTabSpec(STORE_TAG).setIndicator("Custom").setContent(tabHostContentFactory));
+    }
+
+    @Override
+    public void onTabChanged(String tabId) {
+        //if the state is not restored yet, the update cannot succeed (screen rotation fix)
+        if(!canUpdateTab) return;
+
+        //add the proper fragment inside the content
+        FragmentManager   manager         =   getSupportFragmentManager();
+        FragmentTransaction ft            =   manager.beginTransaction();
+
+        Fragment toLoad = null;
+        if(tabId.equals(MAP_TAG)){
+            if(mapFragment == null){
+                mapFragment = new FPMapFragment();
+                ft.add(android.R.id.tabcontent, mapFragment, tabId);
+            }
+            toLoad = mapFragment;
+        } else if (tabId.equals(LOCATE_TAG)){
+            if(locateFragment == null){
+                locateFragment = new FPLocateFragment();
+                ft.add(android.R.id.tabcontent, locateFragment, tabId);
+            }
+            toLoad = locateFragment;
+        } else if (tabId.equals(STORE_TAG)){
+            if(storeFragment == null){
+                storeFragment = new FPStoreFragment();
+                ft.add(android.R.id.tabcontent, storeFragment, tabId);
+            }
+            toLoad = storeFragment;
+        }
+
+        if(previousFragmentTag != null && previousFragmentTag != toLoad.getTag()) {
+            ft.hide(manager.findFragmentByTag(previousFragmentTag));
+        }
+        ft.show(toLoad);
+        ft.commit();
+
+        tryInjectingMessengersIntoFragments();
+
+        previousFragmentTag = tabId;
     }
 
     private void buildNoSensorsAlertMessage(){
@@ -210,6 +252,8 @@ public class WifiLocatorActivity extends AppCompatActivity {
         if(mapFragment != null) getSupportFragmentManager().putFragment(outState, "mapFragment", mapFragment);
         if(storeFragment != null) getSupportFragmentManager().putFragment(outState, "storeFragment", storeFragment);
         if(locateFragment != null) getSupportFragmentManager().putFragment(outState, "locateFragment", locateFragment);
+
+        outState.putString("previousFragmentTag", previousFragmentTag);
     }
 
     /*@Override
@@ -258,64 +302,7 @@ public class WifiLocatorActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
-     * one of the sections/tabs/pages.
-     */
-    public class SectionsPagerAdapter extends FragmentPagerAdapter {
 
-        public SectionsPagerAdapter(FragmentManager fm) {
-            super(fm);
-        }
-
-        @Override
-        public Fragment getItem(int position) {
-            // getItem is called to instantiate the fragment for the given page.
-            switch(position) {
-                case 0:
-                    if (mapFragment == null) {
-                        mapFragment = new FPMapFragment();
-                    }
-                    actualFragment = mapFragment;
-                    break;
-                case 1:
-                    if (locateFragment == null){
-                        locateFragment = new FPLocateFragment();
-                    }
-                    actualFragment = locateFragment;
-                    break;
-                case 2:
-                    if(storeFragment == null) {
-                        storeFragment = new FPStoreFragment();
-                    }
-                    actualFragment = storeFragment;
-                    break;
-            }
-
-            tryInjectingMessengersIntoFragments();
-
-            return actualFragment;
-        }
-
-        @Override
-        public int getCount() {
-            // Show 3 total pages.
-            return 3;
-        }
-
-        @Override
-        public CharSequence getPageTitle(int position) {
-            switch (position) {
-                case 0:
-                    return "MAP";
-                case 1:
-                    return "LOCATE";
-                case 2:
-                    return "STORE";
-            }
-            return null;
-        }
-    }
 
     //try to inject the service messengers objects into the fragments
     private void tryInjectingMessengersIntoFragments(){
@@ -451,6 +438,7 @@ public class WifiLocatorActivity extends AppCompatActivity {
             // This is called when the connection with the service has been
             // unexpectedly disconnected -- that is, its process crashed.
             mFingerprintingService = null;
+            tryInjectingMessengersIntoFragments();
         }
     };
 
@@ -474,6 +462,7 @@ public class WifiLocatorActivity extends AppCompatActivity {
             // This is called when the connection with the service has been
             // unexpectedly disconnected -- that is, its process crashed.
             mInertialNavigationService = null;
+            tryInjectingMessengersIntoFragments();
         }
     };
 }
