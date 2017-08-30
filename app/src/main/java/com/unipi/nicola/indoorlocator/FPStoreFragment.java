@@ -1,6 +1,7 @@
 package com.unipi.nicola.indoorlocator;
 
 import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -57,14 +58,17 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
     private Messenger mFingerprintingService;
     private Messenger mMessenger = new Messenger(new IncomingHandler());
 
-    private EditText lat;
-    private EditText lon;
+    private TextView lat;
+    private TextView lon;
     private EditText alt;
     private Button pickPlace;
     private Button store;
     private CheckBox gpsOn;
     private TextView accuracy;
     private ProgressBar storeProgress;
+    private TextView storePercentage;
+
+    private int oldPercentage; //used for store percentage animation
 
     private Location location; //the location to be filled both by GPS or place picker
 
@@ -81,8 +85,8 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
         criteria.setAccuracy(Criteria.ACCURACY_FINE);
         locationProvider = locationManager.getBestProvider(criteria, false);
 
-        lat = (EditText) rootView.findViewById(R.id.latitude);
-        lon = (EditText) rootView.findViewById(R.id.longitude);
+        lat = (TextView) rootView.findViewById(R.id.latitude);
+        lon = (TextView) rootView.findViewById(R.id.longitude);
         alt = (EditText) rootView.findViewById(R.id.altitude);
         alt.addTextChangedListener(altitudeTextWatcher);
         pickPlace = (Button) rootView.findViewById(R.id.pick_location);
@@ -93,6 +97,7 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
         store = (Button) rootView.findViewById(R.id.store);
         store.setOnClickListener(this);
         storeProgress = (ProgressBar) rootView.findViewById(R.id.store_progress);
+        storePercentage = (TextView) rootView.findViewById(R.id.store_percentage);
 
         possiblyEnableStoreButton();
 
@@ -141,7 +146,50 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
                 e.printStackTrace();
             }
         }
-        storeProgress.setProgress(0);
+        setStoreProgress(0);
+    }
+
+    private void setStoreProgress(int percentage){
+        //handle progress bar
+        if(percentage == 0) {
+            //no animation while resetting progress bar
+            storeProgress.clearAnimation();
+            storeProgress.setProgress(percentage);
+            storeProgress.setAlpha(1.0f);
+        } else if (percentage == 100){
+            //fade out the progress bar
+            AlphaAnimation progressOpacityAnimation = new AlphaAnimation(1.0f, 0.0f);
+            progressOpacityAnimation.setDuration (1500);
+            progressOpacityAnimation.setFillAfter(true);
+            progressOpacityAnimation.setInterpolator (new DecelerateInterpolator());
+            storeProgress.startAnimation(progressOpacityAnimation);
+        } else {
+            ObjectAnimator progressAnimation = ObjectAnimator.ofInt(storeProgress, "progress", percentage);
+            progressAnimation.setDuration(1500); //in milliseconds
+            progressAnimation.setInterpolator(new DecelerateInterpolator());
+            progressAnimation.start();
+        }
+
+        //handle percentage indicator
+        if(percentage == 0) {
+            storePercentage.setText("0%");
+            oldPercentage = 0;
+        } else if (percentage == 100){
+            storePercentage.setText("");
+        } else {
+            ValueAnimator percentageAnimation = ValueAnimator.ofInt(oldPercentage, percentage);
+            percentageAnimation.setDuration(1500);
+            percentageAnimation.setInterpolator(new DecelerateInterpolator());
+            percentageAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator animation) {
+                    storePercentage.setText(animation.getAnimatedValue()+"%");
+                }
+            });
+            percentageAnimation.start();
+        }
+
+        oldPercentage = percentage;
     }
 
     @Override
@@ -164,8 +212,7 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
             Log.d(TAG, "Store button pressed!");
 
             //reset the progress
-            storeProgress.setProgress(5);
-            storeProgress.setAlpha(1.0f);
+            setStoreProgress(0);
 
             //refresh the altitude since it could be modified manually by the user
             location.setAltitude(Double.valueOf(alt.getText().toString()));
@@ -301,11 +348,8 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
                 case MSG_NEXT_STORING_ITERATION:
                     Log.d(TAG, "new storing complete!");
                     int progress = b.getInt("current_iteration")*100/b.getInt("total_iterations");
-                    //move the store progress using an animation
-                    ObjectAnimator progressAnimation = ObjectAnimator.ofInt (storeProgress, "progress", progress);
-                    progressAnimation.setDuration (1500); //in milliseconds
-                    progressAnimation.setInterpolator (new DecelerateInterpolator());
-                    progressAnimation.start();
+
+                    setStoreProgress(progress);
 
                     if(progress == 100){
                         //storing procedure ended
@@ -319,12 +363,6 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
                         } else {
                             WifiLocatorActivity.showFingerprintApList(getActivity(), store, new Point(0, -80), storedFP);
                         }
-                        //fade out the progress bar
-                        AlphaAnimation progressOpacityAnimation = new AlphaAnimation(1.0f, 0.0f);
-                        progressOpacityAnimation.setDuration (1500);
-                        progressOpacityAnimation.setFillAfter(true);
-                        progressOpacityAnimation.setInterpolator (new DecelerateInterpolator());
-                        storeProgress.startAnimation(progressOpacityAnimation);
                     }
                 default:
                     super.handleMessage(msg);

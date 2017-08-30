@@ -69,6 +69,10 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
 
     private ToggleButton realPositioning;
     private Button calibrationButton;
+    private boolean calibrating = false;
+    private boolean realPositionOn = false;
+
+    private Context mContext;
 
     //set containing all the estimated locations visited so far. It is used in order to print once
     //the marker on the map for every distinct estimated location
@@ -95,6 +99,7 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mContext = getContext();
     }
 
     @Override
@@ -123,7 +128,32 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
         //calibration button
         calibrationButton = (Button)rootView.findViewById(R.id.calibrate);
         calibrationButton.setOnClickListener(this);
+
+        //restore the state of the buttons
+        if(savedInstanceState != null){
+            calibrating = savedInstanceState.getBoolean("calibrating");
+            realPositionOn = savedInstanceState.getBoolean("realPositionOn");
+            handleCalibrating();
+            handleRealPositioningOn();
+        }
         return rootView;
+    }
+
+    private void handleCalibrating(){
+        calibrationButton.setEnabled(!calibrating);
+    }
+
+    private void handleRealPositioningOn(){
+        realPositioning.setChecked(realPositionOn);
+
+        try {
+            //enable or disable map positioning
+            if(gMap != null)
+                gMap.setMyLocationEnabled(realPositioning.isChecked());
+        } catch (SecurityException e) {
+            Toast.makeText(getContext(), R.string.no_location_permissions, Toast.LENGTH_LONG);
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -181,6 +211,15 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
 
         displayMarkers();
         displayPath();
+        //handles the "my position" button
+        handleRealPositioningOn();
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putBoolean("calibrating", calibrating);
+        outState.putBoolean("realPositionOn",realPositionOn);
     }
 
     @Override
@@ -196,15 +235,15 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
             userPath = null;
         }
         if(v.getId() == R.id.real_positioning){
-            try {
-                //enable or disable map positioning
-                gMap.setMyLocationEnabled(realPositioning.isChecked());
-            } catch (SecurityException e) {
-                Toast.makeText(getContext(), R.string.no_location_permissions, Toast.LENGTH_LONG);
-                e.printStackTrace();
-            }
+            realPositionOn = realPositioning.isChecked();
+            handleRealPositioningOn();
         }
         if(v.getId() == R.id.calibrate){
+            if(mInertialNavigationService == null){
+                //cannot calibrate, cannot reach the inertial service
+                Toast.makeText(getContext(),"Calibration failed, cannot reach the inertial background service", Toast.LENGTH_LONG).show();
+                return;
+            }
             final AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
             builder.setMessage("Keep the phone in portrait mode. After the first vibration, put it wherever you prefer. After the second vibration, you'll be ready!")
                     .setCancelable(false)
@@ -213,7 +252,8 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
                         public void onClick(DialogInterface dialog, int which) {
                             //send a start calibration message and starts a timer
                             Utils.sendMessage(mInertialNavigationService, InertialPedestrianNavigationService.MSG_START_CALIBRATION, null, null);
-                            calibrationButton.setEnabled(false);
+                            calibrating = true;
+                            handleCalibrating();
                         }
                     })
                     .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -300,8 +340,9 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case MSG_CALIBRATION_COMPLETED:
-                    calibrationButton.setEnabled(true);
-                    Toast.makeText(getContext(), "Calibration OK!", Toast.LENGTH_SHORT).show();
+                    calibrating = false;
+                    handleCalibrating();
+                    Toast.makeText(mContext, "Calibration OK!", Toast.LENGTH_SHORT).show();
                     break;
             }
         }

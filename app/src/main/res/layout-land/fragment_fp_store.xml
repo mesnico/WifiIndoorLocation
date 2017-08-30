@@ -1,4 +1,4 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -6,50 +6,15 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="com.unipi.nicola.indoorlocator.WifiLocatorActivity">
-
-    <LinearLayout
-        android:orientation="vertical"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:layout_marginBottom="12dp"
-        android:id="@+id/linearLayout3"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentStart="true">
-
-        <LinearLayout
-            android:orientation="horizontal"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <TextView
-                android:layout_width="133dp"
-                android:layout_height="wrap_content"
-                android:id="@+id/textView8"
-                android:text="Location label" />
-
-            <EditText
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:inputType="textPersonName"
-                android:text="Room1"
-                android:ems="10"
-                android:id="@+id/location_label"
-                android:textSize="14sp" />
-        </LinearLayout>
-
-    </LinearLayout>
+    tools:context="com.unipi.nicola.indoorlocator.WifiLocatorActivity"
+    android:orientation="horizontal">
 
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:layout_marginBottom="20dp"
-        android:layout_below="@+id/linearLayout3"
-        android:layout_alignParentStart="true"
-        android:id="@+id/linearLayout4">
+        android:id="@+id/linearLayout4"
+        android:layout_weight="1">
 
         <LinearLayout
             android:orientation="horizontal"
@@ -142,44 +107,87 @@
 
     </LinearLayout>
 
-    <RelativeLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:layout_below="@+id/linearLayout4"
-        android:id="@+id/linearLayout5"
-        android:layout_centerHorizontal="true">
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:layout_marginLeft="15dp">
 
-
-        <ProgressBar
-            style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-            android:layout_centerHorizontal="true"
-            android:layout_width="wrap_content"
-            android:layout_height="50dp"
-            android:id="@+id/store_progress"
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
             android:layout_weight="1"
-            android:max="100"
-            android:progress="0"
-            android:progressDrawable="@drawable/circular"
-            android:padding="5dp" />
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="12dp"
+            android:id="@+id/linearLayout3"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentStart="true">
 
-        <Button
-            android:text="Store"
-            android:layout_below="@+id/store_progress"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/store"
-            android:layout_weight="1" />
+            <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/store_percentage"
-            android:layout_alignTop="@+id/store_progress"
+                <TextView
+                    android:layout_width="133dp"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/textView8"
+                    android:text="Location label" />
+
+                <EditText
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPersonName"
+                    android:text="Room1"
+                    android:ems="10"
+                    android:id="@+id/location_label"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="10dp"
+            android:id="@+id/linearLayout5"
             android:layout_centerHorizontal="true"
-            android:layout_marginTop="15dp"
-            android:textSize="14sp" />
+            android:layout_weight="1">
 
-    </RelativeLayout>
 
-</RelativeLayout>
+            <ProgressBar
+                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                android:layout_centerHorizontal="true"
+                android:layout_width="wrap_content"
+                android:layout_height="50dp"
+                android:id="@+id/store_progress"
+                android:layout_weight="1"
+                android:max="100"
+                android:progress="0"
+                android:progressDrawable="@drawable/circular"
+                android:padding="5dp" />
+
+            <Button
+                android:text="Store"
+                android:layout_below="@+id/store_progress"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:id="@+id/store" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/store_percentage"
+                android:layout_alignTop="@+id/store_progress"
+                android:layout_centerHorizontal="true"
+                android:layout_marginTop="15dp"
+                android:textSize="14sp" />
+
+        </RelativeLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

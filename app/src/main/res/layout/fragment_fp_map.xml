@@ -2,7 +2,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.unipi.nicola.indoorlocator.FPMapFragment">
+    tools:context="com.unipi.nicola.indoorlocator.WifiLocatorActivity">
 
     <fragment
         android:id="@+id/map"

@@ -97,14 +97,11 @@ public class WifiLocatorActivity extends AppCompatActivity implements TabHost.On
         canUpdateTab = true;
         mTabHost.onTabChanged(previousFragmentTag);
 
-        //Starts the Fingerprinting Service
+        //Starts the fingerprinting service only once, at application start
         locatorService = new Intent(this, WifiFingerprintingService.class);
-        startService(locatorService);
-        Log.d(TAG, "Locator service should be started!");
-
-        // Bind to the Fingerprinting Service
-        bindService(new Intent(this, WifiFingerprintingService.class), mFingerprintingServiceConnection,
-                Context.BIND_AUTO_CREATE);
+        if(savedInstanceState == null) {
+            startService(locatorService);
+        }
 
         //Starts the Inertial Navigation Service only if there are the right sensors
         SensorManager mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -113,13 +110,12 @@ public class WifiLocatorActivity extends AppCompatActivity implements TabHost.On
         if(rotationSensor != null && accelerometerSensor != null){
             Log.d(TAG, "Starting Inertial navigation service");
 
-            //Starts the Inertial Navigation Service
+            //Starts the Inertial Navigation Service only once, at application start
             inertialNavigationService = new Intent(this, InertialPedestrianNavigationService.class);
-            startService(inertialNavigationService);
+            if (savedInstanceState == null) {
+                startService(inertialNavigationService);
+            }
 
-            // Bind to the Inertial Navigation Service
-            bindService(new Intent(this, InertialPedestrianNavigationService.class), mInertialServiceConnection,
-                    Context.BIND_AUTO_CREATE);
         } else {
             buildNoSensorsAlertMessage();
         }
@@ -146,8 +142,8 @@ public class WifiLocatorActivity extends AppCompatActivity implements TabHost.On
         };
 
         mTabHost.addTab(mTabHost.newTabSpec(MAP_TAG).setIndicator("Map").setContent(tabHostContentFactory));
-        mTabHost.addTab(mTabHost.newTabSpec(LOCATE_TAG).setIndicator("Contacts").setContent(tabHostContentFactory));
-        mTabHost.addTab(mTabHost.newTabSpec(STORE_TAG).setIndicator("Custom").setContent(tabHostContentFactory));
+        mTabHost.addTab(mTabHost.newTabSpec(LOCATE_TAG).setIndicator("Locate").setContent(tabHostContentFactory));
+        mTabHost.addTab(mTabHost.newTabSpec(STORE_TAG).setIndicator("Store").setContent(tabHostContentFactory));
     }
 
     @Override
@@ -225,23 +221,58 @@ public class WifiLocatorActivity extends AppCompatActivity implements TabHost.On
     }
 
     @Override
-    public void onDestroy(){
-        super.onDestroy();
+    protected void onStart() {          //TODO: i'm here! put logs to see when start and stop are being called...
+        super.onStart();
+        Log.d(TAG, "onStart() called");
+
+        if(locatorService != null && mFingerprintingService == null) {
+            // Bind to the Fingerprinting Service
+            bindService(locatorService, mFingerprintingServiceConnection,
+                    Context.BIND_AUTO_CREATE);
+        }
+
+        if(inertialNavigationService != null && mInertialNavigationService == null) {
+            // Bind to the Inertial Navigation Service
+            bindService(inertialNavigationService, mInertialServiceConnection,
+                    Context.BIND_AUTO_CREATE);
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Log.d(TAG, "onStop() called");
+
+        //unbind services if services exists and they are not bound yet
         if(mFingerprintingService != null) {
             unbindService(mFingerprintingServiceConnection);
+            mFingerprintingService = null;
         }
         if(mInertialNavigationService != null){
             unbindService(mInertialServiceConnection);
+            mInertialNavigationService = null;
+        }
+    }
+
+    @Override
+    public void onDestroy(){
+        super.onDestroy();
+        Log.d(TAG, "onDestroy() called");
+
+        if(isFinishing()) {
+            //application is going to be closed
+            Log.d(TAG, "isFinishing() is TRUE");
+            //stop the services if the services were started
+            if (inertialNavigationService != null) {
+                stopService(inertialNavigationService);
+            }
+            if (locatorService != null) {
+                stopService(locatorService);
+            }
+        } else {
+            Log.d(TAG, "isFinishing() is FALSE");
         }
 
-
-        //stop the services
-        if(inertialNavigationService != null){
-            stopService(inertialNavigationService);
-        }
-        if(locatorService != null){
-            stopService(locatorService);
-        }
     }
 
     @Override
