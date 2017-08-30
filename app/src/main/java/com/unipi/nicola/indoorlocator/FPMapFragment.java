@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.PointF;
 import android.location.Location;
@@ -13,6 +14,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Messenger;
+import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -21,7 +23,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.Toast;
-import android.widget.ToggleButton;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -67,10 +68,8 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
     //the current user path
     private Polyline userPath;
 
-    private ToggleButton realPositioning;
     private Button calibrationButton;
     private boolean calibrating = false;
-    private boolean realPositionOn = false;
 
     private Context mContext;
 
@@ -122,9 +121,6 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
         //add listener for reset button
         Button reset = (Button)rootView.findViewById(R.id.reset_path);
         reset.setOnClickListener(this);
-        //listener for real positioning toggle button
-        realPositioning = (ToggleButton)rootView.findViewById(R.id.real_positioning);
-        realPositioning.setOnClickListener(this);
         //calibration button
         calibrationButton = (Button)rootView.findViewById(R.id.calibrate);
         calibrationButton.setOnClickListener(this);
@@ -132,7 +128,6 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
         //restore the state of the buttons
         if(savedInstanceState != null){
             calibrating = savedInstanceState.getBoolean("calibrating");
-            realPositionOn = savedInstanceState.getBoolean("realPositionOn");
             handleCalibrating();
             handleRealPositioningOn();
         }
@@ -144,12 +139,13 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
     }
 
     private void handleRealPositioningOn(){
-        realPositioning.setChecked(realPositionOn);
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getContext());
+        boolean realPositioningEnabled = sharedPref.getBoolean("show_real_position", false);
 
         try {
             //enable or disable map positioning
             if(gMap != null)
-                gMap.setMyLocationEnabled(realPositioning.isChecked());
+                gMap.setMyLocationEnabled(realPositioningEnabled);
         } catch (SecurityException e) {
             Toast.makeText(getContext(), R.string.no_location_permissions, Toast.LENGTH_LONG);
             e.printStackTrace();
@@ -189,6 +185,7 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
 
         displayMarkers();
         displayPath();
+        handleRealPositioningOn();
     }
 
     @Override
@@ -219,7 +216,6 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putBoolean("calibrating", calibrating);
-        outState.putBoolean("realPositionOn",realPositionOn);
     }
 
     @Override
@@ -233,10 +229,6 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
             estimatedLocationsSet.clear();
             gMap.clear();
             userPath = null;
-        }
-        if(v.getId() == R.id.real_positioning){
-            realPositionOn = realPositioning.isChecked();
-            handleRealPositioningOn();
         }
         if(v.getId() == R.id.calibrate){
             if(mInertialNavigationService == null){

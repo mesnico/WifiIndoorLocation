@@ -38,6 +38,9 @@
     <string name="update_after_num_steps">Position update frequency</string>
     <string name="update_after_num_steps_summary">Position is updated after %s steps</string>
 
+    <string name="show_real_position">Enable in-map GPS positioning</string>
+    <string name="show_real_position_summary">When on, map can show the current user GPS position</string>
+
     <!-- Hardcoded strings -->
     <string name="no_location_permissions">No fine location permissions!</string>
 

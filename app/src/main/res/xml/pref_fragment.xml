@@ -77,6 +77,12 @@
 
         </PreferenceCategory>
 
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="show_real_position"
+            android:summary="@string/show_real_position_summary"
+            android:title="@string/show_real_position" />
+
     <!-- NOTE: EditTextPreference accepts EditText attributes. -->
     <!-- NOTE: EditTextPreference's summary should be set to its value by the activity code. -->
 

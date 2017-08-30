@@ -22,15 +22,6 @@
             android:id="@+id/reset_path"
             android:layout_weight="1" />
 
-        <ToggleButton
-            android:text="ToggleButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/real_positioning"
-            android:layout_weight="1"
-            android:textOff="Real Pos OFF"
-            android:textOn="Real Pos ON" />
-
         <Button
             android:text="Calibrate"
             android:layout_width="wrap_content"

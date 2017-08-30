@@ -36,6 +36,8 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     public static final String PREF_STEP_LENGTH = "step_length";
     public static final String PREF_UPDATE_AFTER_NUM_STEPS = "update_after_num_steps";
 
+    public static final String PREF_SHOW_REAL_POSITION = "show_real_position";
+
     /**
      * Set up the {@link android.app.ActionBar}, if the API is available.
      */
