@@ -120,7 +120,7 @@
             android:orientation="vertical"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_weight="1"
+            android:layout_weight="0.66"
             android:layout_marginTop="12dp"
             android:layout_marginBottom="12dp"
             android:id="@+id/linearLayout3"
@@ -156,12 +156,31 @@
             android:layout_marginTop="10dp"
             android:id="@+id/linearLayout5"
             android:layout_centerHorizontal="true"
-            android:layout_weight="1">
+            android:layout_weight="0.33">
 
+
+            <Button
+                android:text="Store"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/store"
+                android:drawableBottom="@android:drawable/arrow_down_float"
+                android:drawablePadding="5dp"
+                android:drawableTint="@color/cast_intro_overlay_background_color"
+                android:layout_alignParentBottom="true"
+                android:layout_centerHorizontal="true" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/store_percentage"
+                android:textSize="14sp"
+                android:layout_alignTop="@+id/store_progress"
+                android:layout_centerHorizontal="true"
+                android:layout_marginTop="16dp" />
 
             <ProgressBar
                 style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-                android:layout_centerHorizontal="true"
                 android:layout_width="wrap_content"
                 android:layout_height="50dp"
                 android:id="@+id/store_progress"
@@ -169,27 +188,9 @@
                 android:max="100"
                 android:progress="0"
                 android:progressDrawable="@drawable/circular"
-                android:padding="5dp" />
-
-            <Button
-                android:text="Store"
-                android:layout_below="@+id/store_progress"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerHorizontal="true"
-                android:id="@+id/store"
-                android:drawableBottom="@android:drawable/arrow_down_float"
-                android:drawablePadding="5dp"
-                android:drawableTint="@color/cast_intro_overlay_background_color" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/store_percentage"
-                android:layout_alignTop="@+id/store_progress"
-                android:layout_centerHorizontal="true"
-                android:layout_marginTop="15dp"
-                android:textSize="14sp" />
+                android:padding="5dp"
+                android:layout_above="@+id/store"
+                android:layout_centerHorizontal="true" />
 
         </RelativeLayout>
 

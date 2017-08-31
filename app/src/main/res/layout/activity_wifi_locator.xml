@@ -37,6 +37,13 @@
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"/>
 
+        <View
+            android:layout_below="@+id/tab_title"
+            android:layout_width="match_parent"
+            android:layout_height="1dip"
+            android:background="@color/colorPrimary"
+            android:id="@+id/divisor" />
+
         <FrameLayout
             android:id="@android:id/tabcontent"
             android:layout_width="fill_parent"

@@ -146,7 +146,6 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
                 e.printStackTrace();
             }
         }
-        setStoreProgress(0);
     }
 
     private void setStoreProgress(int percentage){

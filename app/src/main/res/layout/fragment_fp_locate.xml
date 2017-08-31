@@ -42,7 +42,8 @@
         android:layout_marginTop="30dp"
         android:layout_below="@+id/locate_frag_head"
         android:layout_alignParentStart="true"
-        android:id="@+id/fingerprints_list" />
+        android:id="@+id/fingerprints_list"
+        android:background="@drawable/borders"/>
 
     <LinearLayout
         android:orientation="horizontal"

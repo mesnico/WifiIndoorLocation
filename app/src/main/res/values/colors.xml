@@ -3,7 +3,10 @@
     <color name="colorPrimary">#979797</color>
     <color name="colorPrimaryDark">#808080</color>
     <color name="colorAccent">#5263ff</color>
+    <color name="colorLightSelection">#e2e5ea</color>
+    <color name="colorBackground">#fcf9f3</color>
 
+    <color name="tabUnselected">#efefef</color>
     <color name="progressColor">#0000FF</color>
     <color name="validFingerprintColor">#FFFFFF</color>
 </resources>

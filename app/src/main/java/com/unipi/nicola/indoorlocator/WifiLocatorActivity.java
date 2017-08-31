@@ -39,19 +39,21 @@ import android.view.MenuItem;
 import android.view.View;
 
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.TabHost;
+import android.widget.TabWidget;
 import android.widget.TableLayout;
 import android.widget.TextView;
 
 import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprint;
 
 public class WifiLocatorActivity extends AppCompatActivity implements TabHost.OnTabChangeListener{
-    public static final String MAP_TAG = "map";
-    public static final String LOCATE_TAG = "locate";
-    public static final String STORE_TAG = "store";
+    public static final String MAP_TAG = "Map";
+    public static final String LOCATE_TAG = "Locate";
+    public static final String STORE_TAG = "Store";
 
     //Messenger for communicating with the fingerprinting service and inertial navigation service
     Messenger mFingerprintingService = null;
@@ -130,10 +132,15 @@ public class WifiLocatorActivity extends AppCompatActivity implements TabHost.On
         }
     }
 
-    private void initTabs(){
-        mTabHost = (FragmentTabHost)findViewById(android.R.id.tabhost);
-        mTabHost.setup(this, getSupportFragmentManager(), android.R.id.tabcontent);
-        mTabHost.setOnTabChangedListener(this);
+    private void addTab(String label, int drawableId) {
+        TabHost.TabSpec spec = mTabHost.newTabSpec(label);
+        TabWidget tabWidget = (TabWidget)findViewById(android.R.id.tabs);
+
+        View tabIndicator = LayoutInflater.from(this).inflate(R.layout.tab_indicator, tabWidget, false);
+        TextView title = (TextView) tabIndicator.findViewById(R.id.tab_title);
+        title.setText(label);
+        ImageView icon = (ImageView) tabIndicator.findViewById(R.id.tab_icon);
+        icon.setImageResource(drawableId);
 
         //the default content loaded into the fragment container
         //it will be completely loaded when the tab is changed
@@ -144,9 +151,22 @@ public class WifiLocatorActivity extends AppCompatActivity implements TabHost.On
             }
         };
 
-        mTabHost.addTab(mTabHost.newTabSpec(MAP_TAG).setIndicator("Map").setContent(tabHostContentFactory));
+        spec.setIndicator(tabIndicator);
+        spec.setContent(tabHostContentFactory);
+        mTabHost.addTab(spec);
+    }
+
+    private void initTabs(){
+        mTabHost = (FragmentTabHost)findViewById(android.R.id.tabhost);
+        mTabHost.setup(this, getSupportFragmentManager(), android.R.id.tabcontent);
+        mTabHost.setOnTabChangedListener(this);
+
+        /*mTabHost.addTab(mTabHost.newTabSpec(MAP_TAG).setIndicator("Map").setContent(tabHostContentFactory));
         mTabHost.addTab(mTabHost.newTabSpec(LOCATE_TAG).setIndicator("Locate").setContent(tabHostContentFactory));
-        mTabHost.addTab(mTabHost.newTabSpec(STORE_TAG).setIndicator("Store").setContent(tabHostContentFactory));
+        mTabHost.addTab(mTabHost.newTabSpec(STORE_TAG).setIndicator("Store").setContent(tabHostContentFactory));*/
+        addTab(MAP_TAG, android.R.drawable.ic_menu_mapmode);
+        addTab(LOCATE_TAG, android.R.drawable.ic_menu_mylocation);
+        addTab(STORE_TAG, android.R.drawable.ic_menu_save);
     }
 
     @Override

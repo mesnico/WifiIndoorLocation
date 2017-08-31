@@ -54,7 +54,7 @@ public class InertialPedestrianNavigationService extends Service implements Sens
     Messenger mCalibrationActivity;
 
     private static final int CALIBRATION_SAMPLES = 12;
-    private static final int CALIBRATION_TIME = 7; //seconds
+    private static final int CALIBRATION_TIME = 10; //seconds
     private static final float PEDOMETER_SENSITIVITY = 15.0f;
 
     private SensorManager mSensorManager;
