@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.drawable.Drawable;
 import android.preference.PreferenceManager;
+import android.support.v4.content.res.ResourcesCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -30,6 +31,7 @@ public class FingerprintsListAdapter extends ArrayAdapter<WifiFingerprint> {
 
     double distanceThreshold;
     int numberOfNearestNeighbors;
+    Context context;
 
     public FingerprintsListAdapter(Context context, List<WifiFingerprint> users) {
         super(context, 0, users);
@@ -37,6 +39,7 @@ public class FingerprintsListAdapter extends ArrayAdapter<WifiFingerprint> {
 
         distanceThreshold = Double.valueOf(sharedPref.getString(SettingsActivity.PREF_DISTANCE_THRESHOLD_KEY, "10"));
         numberOfNearestNeighbors = Integer.valueOf(sharedPref.getString(SettingsActivity.PREF_NEAREST_NEIGHBORS_NUMBER_KEY, "3"));
+        this.context = context;
     }
 
     @Override
@@ -54,9 +57,11 @@ public class FingerprintsListAdapter extends ArrayAdapter<WifiFingerprint> {
         //if this fingerprint is out of range, change the visual appearance
         TableRow row = (TableRow)convertView.findViewById(R.id.fp_row);
         if(position + 1 > numberOfNearestNeighbors || fingerprint.getDistance() > distanceThreshold){
-            row.setBackgroundColor(Color.parseColor("#ffcc99"));
+            row.setBackground(
+                    ResourcesCompat.getDrawable(context.getResources(), R.drawable.dashed_diagonal_lines, context.getTheme()));
         } else {
-            row.setBackgroundColor(Color.parseColor("#ffffff"));
+            row.setBackgroundColor(
+                    ResourcesCompat.getColor(context.getResources(), R.color.validFingerprintColor, context.getTheme()));
         }
 
         // populate the data into the template view using the data object

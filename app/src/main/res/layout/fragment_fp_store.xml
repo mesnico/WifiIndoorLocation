@@ -77,7 +77,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:id="@+id/pick_location" />
+            android:id="@+id/pick_location"
+            android:drawableRight="@android:drawable/ic_dialog_map"
+            android:drawableTint="@color/cast_expanded_controller_background_color" />
 
         <LinearLayout
             android:orientation="horizontal"
@@ -169,7 +171,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/store"
-            android:layout_weight="1" />
+            android:layout_weight="1"
+            android:drawableBottom="@android:drawable/arrow_down_float"
+            android:drawablePadding="5dp"
+            android:drawableTint="@color/cast_intro_overlay_background_color" />
 
         <TextView
             android:layout_width="wrap_content"

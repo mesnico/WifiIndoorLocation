@@ -17,7 +17,9 @@
         android:id="@+id/save_calibration"
         android:layout_marginEnd="14dp"
         android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true" />
+        android:layout_alignParentEnd="true"
+        android:drawableLeft="@android:drawable/stat_sys_download"
+        android:drawableTint="@color/cast_expanded_controller_background_color" />
 
     <Button
         android:text="Calibrate"
@@ -27,21 +29,11 @@
         android:layout_alignParentTop="true"
         android:layout_alignParentStart="true" />
 
-    <TextView
-        android:text="Previously saved calibrations"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="26dp"
-        android:id="@+id/previous_calibr_textview"
-        android:layout_below="@+id/calibrate"
-        android:layout_alignParentStart="true"
-        android:textStyle="normal|bold" />
-
     <ListView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="13dp"
-        android:layout_below="@+id/previous_calibr_textview"
-        android:layout_alignParentStart="true"
-        android:id="@+id/saved_calibrations" />
+        android:layout_marginTop="26dp"
+        android:id="@+id/saved_calibrations"
+        android:layout_below="@+id/save_calibration"
+        android:layout_alignParentStart="true" />
 </RelativeLayout>

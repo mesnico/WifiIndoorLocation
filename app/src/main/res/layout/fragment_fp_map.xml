@@ -20,7 +20,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/reset_path"
-            android:layout_weight="1" />
+            android:layout_weight="1"
+            android:drawableLeft="@drawable/cast_ic_notification_forward"
+            android:drawableTint="@color/cast_expanded_controller_background_color" />
 
         <TextView
             android:layout_width="wrap_content"
