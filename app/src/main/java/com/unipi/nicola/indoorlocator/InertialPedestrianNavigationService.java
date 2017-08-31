@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.graphics.PointF;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -18,14 +19,21 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.PowerManager;
 import android.os.Vibrator;
+import android.preference.PreferenceManager;
 import android.util.Log;
-import android.widget.Toast;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.LUDecomposition;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.TimerTask;
 
 public class InertialPedestrianNavigationService extends Service implements SensorEventListener, StepListener{
@@ -36,12 +44,14 @@ public class InertialPedestrianNavigationService extends Service implements Sens
     public static final int MSG_RESET = 2;
     public static final int MSG_PARAMETERS_CHANGED = 3;
     public static final int MSG_START_CALIBRATION = 4;
+    public static final int MSG_SAVE_CALIBRATION = 5;
+    public static final int MSG_USE_CALIBRATION = 6;
 
     private static final float LAT_TO_METERS = 110.574f * 1000;
     private static final float LONG_TO_METERS = 111.320f * 1000;
 
     IndoorLocatorApplication app;
-    Messenger mMapFragment;
+    Messenger mCalibrationActivity;
 
     private static final int CALIBRATION_SAMPLES = 12;
     private static final int CALIBRATION_TIME = 7; //seconds
@@ -119,6 +129,14 @@ public class InertialPedestrianNavigationService extends Service implements Sens
                 "MyWakelockTag");
         wakeLock.acquire();
 
+        //initialize the calibration matrix with the one stored in preferences
+        CalibrationData cd = CalibrationUtils.getCalibrationInUse(this);
+        if(cd == null ){
+            ufdToPhoneRotationMatrix = MatrixUtils.createRealIdentityMatrix(3);
+        } else {
+            ufdToPhoneRotationMatrix = cd.getCalibrationMatrix();
+        }
+
         app = (IndoorLocatorApplication) getApplication();
     }
 
@@ -162,8 +180,8 @@ public class InertialPedestrianNavigationService extends Service implements Sens
             switch (msg.what) {
                 case MSG_HELLO_FROM_MAP_FRAGMENT:
                     //store the interlocutor
-                    mMapFragment = msg.replyTo;
-                    Log.d(TAG, "Hello message received from map fragment!");
+                    mCalibrationActivity = msg.replyTo;
+                    Log.d(TAG, "Hello message received from calibration activity!");
                     break;
 
                 case MSG_RESET:
@@ -195,6 +213,26 @@ public class InertialPedestrianNavigationService extends Service implements Sens
                         }
                     }, CALIBRATION_TIME*1000);
                     break;
+                case MSG_SAVE_CALIBRATION:
+                    String label = b.getString("calibration_label");
+                    boolean success = CalibrationUtils.saveCalibration(InertialPedestrianNavigationService.this, label, (Array2DRowRealMatrix)ufdToPhoneRotationMatrix);
+                    Bundle retB = new Bundle();
+                    retB.putBoolean("success",success);
+                    Utils.sendMessage(mCalibrationActivity, CalibrationActivity.MSG_CALIBRATION_SAVED, retB, null);
+                    break;
+                case MSG_USE_CALIBRATION:
+                    //receive the selected calibration
+                    CalibrationData calibration = (CalibrationData) b.getSerializable("selected_calibration");
+                    if(calibration == null){
+                        //if null, use default
+                        ufdToPhoneRotationMatrix = MatrixUtils.createRealIdentityMatrix(3);
+                        Log.d(TAG, "Used default calibration");
+                    } else {
+                        ufdToPhoneRotationMatrix = calibration.getCalibrationMatrix();
+                        Log.d(TAG, "Used calibration: "+calibration.getLabel());
+                    }
+
+                    printMatrix(ufdToPhoneRotationMatrix);
             }
         }
     }
@@ -250,7 +288,7 @@ public class InertialPedestrianNavigationService extends Service implements Sens
                         printMatrix(ufdToPhoneRotationMatrix);
 
                         //notify the map fragment that the calibration is ok
-                        Utils.sendMessage(mMapFragment, FPMapFragment.MSG_CALIBRATION_COMPLETED, null, null);
+                        Utils.sendMessage(mCalibrationActivity, CalibrationActivity.MSG_CALIBRATION_COMPLETED, null, null);
                     }
                     calibrationState = -1;
                 } else {

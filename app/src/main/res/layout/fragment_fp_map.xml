@@ -22,12 +22,15 @@
             android:id="@+id/reset_path"
             android:layout_weight="1" />
 
-        <Button
-            android:text="Calibrate"
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/calibrate"
-            android:layout_weight="1" />
+            android:id="@+id/calibration_label"
+            android:layout_weight="1"
+            android:textStyle="normal|bold"
+            android:textSize="18sp"
+            android:layout_marginLeft="20dp" />
+
     </LinearLayout>
 
 </RelativeLayout>

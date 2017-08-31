@@ -1,9 +1,7 @@
 package com.unipi.nicola.indoorlocator;
 
-import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
@@ -11,8 +9,6 @@ import android.graphics.Color;
 import android.graphics.PointF;
 import android.location.Location;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.os.Messenger;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
@@ -22,6 +18,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -40,7 +37,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.TimerTask;
 
 /**
  * The fragment carrying the google map.
@@ -48,9 +44,6 @@ import java.util.TimerTask;
 
 public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.OnClickListener {
     public static final String TAG = "FPMapFragment";
-
-    //messages
-    public static final int MSG_CALIBRATION_COMPLETED = 1;
 
     private IndoorLocatorApplication app;
     private GoogleMap gMap = null;
@@ -61,15 +54,12 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
      * to communicate with the Fingerprinting Service
      */
     private Messenger mInertialNavigationService;
-    private Messenger mMessenger = new Messenger(new FPMapFragment.IncomingHandler());
 
     //the current shown marker
     private Marker currentMarker;
     //the current user path
     private Polyline userPath;
-
-    private Button calibrationButton;
-    private boolean calibrating = false;
+    private TextView calibrationLabel;
 
     private Context mContext;
 
@@ -105,9 +95,6 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
     public void setArguments(Bundle b) {
         //get the messenger from the activity
         mInertialNavigationService = b.getParcelable("mInertialNavigationService");
-
-        //sends an hello message so that the service knows who he is talking to
-        Utils.sendMessage(mInertialNavigationService, WifiFingerprintingService.MSG_HELLO_FROM_STORE_FRAGMENT, null, mMessenger);
     }
 
     @Override
@@ -121,21 +108,17 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
         //add listener for reset button
         Button reset = (Button)rootView.findViewById(R.id.reset_path);
         reset.setOnClickListener(this);
-        //calibration button
-        calibrationButton = (Button)rootView.findViewById(R.id.calibrate);
-        calibrationButton.setOnClickListener(this);
+
+        //setup the calibration label
+        calibrationLabel = (TextView) rootView.findViewById(R.id.calibration_label);
+        calibrationLabel.setOnClickListener(this);
+        updateCalibration();
 
         //restore the state of the buttons
         if(savedInstanceState != null){
-            calibrating = savedInstanceState.getBoolean("calibrating");
-            handleCalibrating();
             handleRealPositioningOn();
         }
         return rootView;
-    }
-
-    private void handleCalibrating(){
-        calibrationButton.setEnabled(!calibrating);
     }
 
     private void handleRealPositioningOn(){
@@ -149,6 +132,22 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
         } catch (SecurityException e) {
             Toast.makeText(getContext(), R.string.no_location_permissions, Toast.LENGTH_LONG);
             e.printStackTrace();
+        }
+    }
+
+    private void updateCalibration(){
+        CalibrationData cd = CalibrationUtils.getCalibrationInUse(getContext());
+        String currentCalibrationLabel = (cd == null) ? "Default" : cd.getLabel();
+        calibrationLabel.setText(currentCalibrationLabel);
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if(requestCode == WifiLocatorActivity.CALIBRATION_ACTIVITY){
+            Log.d(TAG, "Calibration activity finished!");
+            updateCalibration();
         }
     }
 
@@ -186,6 +185,7 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
         displayMarkers();
         displayPath();
         handleRealPositioningOn();
+        updateCalibration();
     }
 
     @Override
@@ -213,49 +213,19 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
     }
 
     @Override
-    public void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        outState.putBoolean("calibrating", calibrating);
-    }
-
-    @Override
     public void onClick(View v) {
         if(v.getId() == R.id.reset_path){
             //the reset path button is clicked
 
             //reset the view and all related data structures
-            //sends an hello message so that the service knows who he is talking to
             Utils.sendMessage(mInertialNavigationService,InertialPedestrianNavigationService.MSG_RESET, null, null);
             estimatedLocationsSet.clear();
             gMap.clear();
             userPath = null;
-        }
-        if(v.getId() == R.id.calibrate){
-            if(mInertialNavigationService == null){
-                //cannot calibrate, cannot reach the inertial service
-                Toast.makeText(getContext(),"Calibration failed, cannot reach the inertial background service", Toast.LENGTH_LONG).show();
-                return;
-            }
-            final AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-            builder.setMessage("Keep the phone in portrait mode. After the first vibration, put it wherever you prefer. After the second vibration, you'll be ready!")
-                    .setCancelable(false)
-                    .setPositiveButton("Ok, start calibration", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            //send a start calibration message and starts a timer
-                            Utils.sendMessage(mInertialNavigationService, InertialPedestrianNavigationService.MSG_START_CALIBRATION, null, null);
-                            calibrating = true;
-                            handleCalibrating();
-                        }
-                    })
-                    .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.cancel();
-                        }
-                    });
-            final AlertDialog alert = builder.create();
-            alert.show();
+        } else if(v.getId() == R.id.calibration_label){
+            //show the Calibration Activity
+            Intent intent = new Intent(getContext(), CalibrationActivity.class);
+            startActivityForResult(intent, WifiLocatorActivity.CALIBRATION_ACTIVITY);
         }
 
     }
@@ -323,20 +293,4 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
             displayPath();
         }
     };
-
-    /**
-     * handler for messages coming from InertialPedestrianNavigationService
-     */
-    class IncomingHandler extends Handler {
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case MSG_CALIBRATION_COMPLETED:
-                    calibrating = false;
-                    handleCalibrating();
-                    Toast.makeText(mContext, "Calibration OK!", Toast.LENGTH_SHORT).show();
-                    break;
-            }
-        }
-    }
 }

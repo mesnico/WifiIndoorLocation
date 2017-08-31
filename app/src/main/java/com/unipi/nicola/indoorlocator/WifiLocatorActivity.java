@@ -55,7 +55,8 @@ public class WifiLocatorActivity extends AppCompatActivity implements TabHost.On
     Messenger mFingerprintingService = null;
     Messenger mInertialNavigationService = null;
 
-    private static final int SETTINGS_ACTIVITY = 17930;
+    public static final int SETTINGS_ACTIVITY = 17930;
+    public static final int CALIBRATION_ACTIVITY = 17931;
 
     //Reference to each individual fragment
     Fragment mapFragment;
@@ -221,7 +222,7 @@ public class WifiLocatorActivity extends AppCompatActivity implements TabHost.On
     }
 
     @Override
-    protected void onStart() {          //TODO: i'm here! put logs to see when start and stop are being called...
+    protected void onStart() {
         super.onStart();
         Log.d(TAG, "onStart() called");
 
@@ -316,6 +317,10 @@ public class WifiLocatorActivity extends AppCompatActivity implements TabHost.On
             startActivityForResult(intent,SETTINGS_ACTIVITY);
 
             return true;
+        } else if(id == R.id.calibration_settings) {
+            //show the Calibration Activity
+            Intent intent = new Intent(this, CalibrationActivity.class);
+            startActivityForResult(intent, CALIBRATION_ACTIVITY);
         }
 
         return super.onOptionsItemSelected(item);

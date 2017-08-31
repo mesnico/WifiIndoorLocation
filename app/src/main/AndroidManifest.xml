@@ -45,10 +45,18 @@
                 android:value="com.unipi.nicola.indoorlocator.WifiLocatorActivity" />
         </activity>
 
+        <activity
+            android:name=".CalibrationActivity"
+            android:label="@string/title_calibration_activity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.unipi.nicola.indoorlocator.WifiLocatorActivity" />
+        </activity>
+
         <service
             android:name=".InertialPedestrianNavigationService"
             android:enabled="true"
-            android:exported="true"></service>
+            android:exported="true" />
     </application>
 
 </manifest>
