@@ -1,6 +1,5 @@
 <resources>
-    <string name="app_name">IndoorLocator</string>
-    <string name="title_activity_wifi_locator">Wifi Locator</string>
+    <string name="app_name">Pedestrian Locator</string>
     <string name="action_settings">Settings</string>
     <string name="calibration_settings">Calibration</string>
     <string name="section_format">Hello World from section: %1$d</string>
@@ -45,6 +44,10 @@
 
     <!-- Hardcoded strings -->
     <string name="no_location_permissions">No fine location permissions!</string>
+    <string name="steps_count">Steps: {0}</string>
+    <string name="wifi_alert">Wifi is needed for this application to work. Do you want to enable it now?</string>
+    <string name="wifi_error">Cannot continue if wifi is disabled</string>
+    <string name="missing_sensors">There aren\'t the right sensors to perform inertial navigation. It will be disabled</string>
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>

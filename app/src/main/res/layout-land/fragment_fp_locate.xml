@@ -19,10 +19,12 @@
             android:layout_weight="0.66">
 
             <Button
-                android:text="Show Current APs"
-                android:layout_width="match_parent"
+                android:text="Access Points"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:id="@+id/current_aps" />
+                android:id="@+id/current_aps"
+                android:drawableLeft="@android:drawable/ic_menu_view"
+                android:drawableTint="@color/cast_expanded_controller_background_color" />
 
             <Switch
                 android:text="Locate ON"
@@ -58,7 +60,7 @@
 
         <ListView
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:layout_below="@+id/locate_frag_head"
             android:layout_alignParentStart="true"
             android:id="@+id/fingerprints_list"

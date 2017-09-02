@@ -212,7 +212,7 @@ public class WifiLocatorActivity extends AppCompatActivity implements TabHost.On
 
     private void buildNoSensorsAlertMessage(){
         final AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setMessage("There aren't the right sensors to perform inertial navigation. It will be disabled")
+        builder.setMessage(R.string.missing_sensors)
                 .setCancelable(false)
                 .setNeutralButton("Ok", new DialogInterface.OnClickListener() {
                     @Override
@@ -226,7 +226,7 @@ public class WifiLocatorActivity extends AppCompatActivity implements TabHost.On
 
     private void buildAlertMessageNoWifi() {
         final AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setMessage("Wifi is needed for this application to work. Do you want to enable it?")
+        builder.setMessage(getString(R.string.wifi_alert))
                 .setCancelable(false)
                 .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                     public void onClick(final DialogInterface dialog, final int id) {

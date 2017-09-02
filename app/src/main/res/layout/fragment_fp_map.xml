@@ -10,30 +10,54 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <LinearLayout
+    <RelativeLayout
         android:orientation="horizontal"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content">
 
-        <Button
-            android:text="Reset Path"
+        <LinearLayout
+            android:id="@+id/left_content"
+            android:orientation="vertical"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/reset_path"
-            android:layout_weight="1"
-            android:drawableLeft="@drawable/cast_ic_notification_forward"
-            android:drawableTint="@color/cast_expanded_controller_background_color"
-            style="buttonStyle" />
+            android:layout_marginLeft="5dp"
+            android:layout_weight="1">
+
+            <Button
+                android:text="Reset Path"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/reset_path"
+                android:layout_weight="1"
+                android:drawableLeft="@drawable/cast_ic_notification_forward"
+                android:drawableTint="@color/cast_expanded_controller_background_color"
+                style="buttonStyle" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/steps_counter"
+                android:layout_weight="1"
+                android:background="@drawable/borders"
+                android:layout_marginLeft="4dp"
+                android:padding="4dp" />
+
+        </LinearLayout>
+
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/calibration_label"
-            android:layout_weight="1"
             android:textStyle="normal|bold"
             android:textSize="18sp"
-            android:layout_marginLeft="20dp" />
+            android:layout_marginLeft="20dp"
+            android:layout_weight="1"
+            android:layout_alignParentTop="true"
+            android:layout_toEndOf="@+id/left_content"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="5dp" />
 
-    </LinearLayout>
+    </RelativeLayout>
 
 </RelativeLayout>

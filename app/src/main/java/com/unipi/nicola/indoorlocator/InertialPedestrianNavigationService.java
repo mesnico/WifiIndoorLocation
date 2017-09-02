@@ -5,7 +5,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.graphics.PointF;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -19,43 +18,38 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.PowerManager;
 import android.os.Vibrator;
-import android.preference.PreferenceManager;
 import android.util.Log;
-
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.LUDecomposition;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 
-import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.TimerTask;
 
 public class InertialPedestrianNavigationService extends Service implements SensorEventListener, StepListener{
     public static final String TAG = "InertialNavService";
 
     //messages
-    public static final int MSG_HELLO_FROM_MAP_FRAGMENT = 1;
-    public static final int MSG_RESET = 2;
-    public static final int MSG_PARAMETERS_CHANGED = 3;
-    public static final int MSG_START_CALIBRATION = 4;
-    public static final int MSG_SAVE_CALIBRATION = 5;
-    public static final int MSG_USE_CALIBRATION = 6;
+    public static final int MSG_HELLO_FROM_CALIBRATION_ACTIVITY = 1;
+    public static final int MSG_HELLO_FROM_MAP_FRAGMENT = 2;
+    public static final int MSG_RESET = 3;
+    public static final int MSG_PARAMETERS_CHANGED = 4;
+    public static final int MSG_START_CALIBRATION = 5;
+    public static final int MSG_SAVE_CALIBRATION = 6;
+    public static final int MSG_USE_CALIBRATION = 7;
 
     private static final float LAT_TO_METERS = 110.574f * 1000;
     private static final float LONG_TO_METERS = 111.320f * 1000;
 
     IndoorLocatorApplication app;
     Messenger mCalibrationActivity;
+    Messenger mMapFragment;
 
     private static final int CALIBRATION_SAMPLES = 12;
     private static final int CALIBRATION_TIME = 10; //seconds
-    private static final float PEDOMETER_SENSITIVITY = 15.0f;
+    private static final float PEDOMETER_SENSITIVITY = 6.66f;
 
     private SensorManager mSensorManager;
     private Sensor rotationSensor;
@@ -179,6 +173,11 @@ public class InertialPedestrianNavigationService extends Service implements Sens
             Bundle b = msg.getData();
             switch (msg.what) {
                 case MSG_HELLO_FROM_MAP_FRAGMENT:
+                    //store the interlocutor
+                    mMapFragment = msg.replyTo;
+                    Log.d(TAG, "Hello message received from map fragment!");
+                    break;
+                case MSG_HELLO_FROM_CALIBRATION_ACTIVITY:
                     //store the interlocutor
                     mCalibrationActivity = msg.replyTo;
                     Log.d(TAG, "Hello message received from calibration activity!");
@@ -320,6 +319,8 @@ public class InertialPedestrianNavigationService extends Service implements Sens
     public void onStep() {
         //called when a new step is detected
         stepCounter++;
+        Utils.sendMessage(mMapFragment, FPMapFragment.MSG_STEP, null, null);
+
         //update the position using the current direction. position is needed as lat lon coordinates
         //https://stackoverflow.com/questions/1253499/simple-calculations-for-working-with-lat-lon-km-distance
         if(filteredDirection != null && actualPosition != null) {

@@ -6,9 +6,12 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.graphics.Point;
 import android.graphics.PointF;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.os.Messenger;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
@@ -32,7 +35,9 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprint;
 
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -45,6 +50,9 @@ import java.util.Set;
 public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.OnClickListener {
     public static final String TAG = "FPMapFragment";
 
+    //messages
+    public static final int MSG_STEP = 1;
+
     private IndoorLocatorApplication app;
     private GoogleMap gMap = null;
     private View rootView;
@@ -54,12 +62,16 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
      * to communicate with the Fingerprinting Service
      */
     private Messenger mInertialNavigationService;
+    private Messenger mMessenger = new Messenger(new FPMapFragment.IncomingHandler());
 
     //the current shown marker
     private Marker currentMarker;
     //the current user path
     private Polyline userPath;
     private TextView calibrationLabel;
+
+    private TextView stepsCounter;
+    int steps = 0;
 
     private Context mContext;
 
@@ -95,6 +107,9 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
     public void setArguments(Bundle b) {
         //get the messenger from the activity
         mInertialNavigationService = b.getParcelable("mInertialNavigationService");
+
+        //sends an hello message so that the service knows who he is talking to
+        Utils.sendMessage(mInertialNavigationService, InertialPedestrianNavigationService.MSG_HELLO_FROM_MAP_FRAGMENT, null, mMessenger);
     }
 
     @Override
@@ -114,10 +129,15 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
         calibrationLabel.setOnClickListener(this);
         updateCalibration();
 
-        //restore the state of the buttons
+        stepsCounter = (TextView) rootView.findViewById(R.id.steps_counter);
+
+        //restore the state of buttons and text views
         if(savedInstanceState != null){
             handleRealPositioningOn();
+            steps = savedInstanceState.getInt("steps");
         }
+
+        updateSteps();
         return rootView;
     }
 
@@ -139,6 +159,16 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
         CalibrationData cd = CalibrationUtils.getCalibrationInUse(getContext());
         String currentCalibrationLabel = (cd == null) ? "Default" : cd.getLabel();
         calibrationLabel.setText(currentCalibrationLabel);
+    }
+
+    private void updateSteps(){
+        if(isAdded()){
+            //prevent IllegalStateException calling getString on a potentially detached fragment
+            stepsCounter.setText(MessageFormat.format(
+                    getString(R.string.steps_count),
+                    steps));
+        }
+
     }
 
     @Override
@@ -222,12 +252,22 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
             estimatedLocationsSet.clear();
             gMap.clear();
             userPath = null;
+            steps = 0;
+            updateSteps();
         } else if(v.getId() == R.id.calibration_label){
             //show the Calibration Activity
             Intent intent = new Intent(getContext(), CalibrationActivity.class);
             startActivityForResult(intent, WifiLocatorActivity.CALIBRATION_ACTIVITY);
         }
 
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        //save the current number of steps
+        outState.putInt("steps", steps);
     }
 
     private final BroadcastReceiver locationEstimationAvailable = new BroadcastReceiver() {
@@ -293,4 +333,18 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
             displayPath();
         }
     };
+
+    class IncomingHandler extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case MSG_STEP:
+                    steps++;
+                    updateSteps();
+                    break;
+                default:
+                    super.handleMessage(msg);
+            }
+        }
+    }
 }

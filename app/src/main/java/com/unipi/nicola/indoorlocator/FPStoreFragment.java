@@ -12,6 +12,7 @@ import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -68,7 +69,8 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
     private ProgressBar storeProgress;
     private TextView storePercentage;
 
-    private int oldPercentage; //used for store percentage animation
+    //used for store percentage animation; -1 means no valid progress
+    private int oldProgress = -1;
 
     private Location location; //the location to be filled both by GPS or place picker
 
@@ -98,6 +100,14 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
         store.setOnClickListener(this);
         storeProgress = (ProgressBar) rootView.findViewById(R.id.store_progress);
         storePercentage = (TextView) rootView.findViewById(R.id.store_percentage);
+
+        //restore latitude, longitude values if the activity was rebuilt
+        if(savedInstanceState != null){
+            lat.setText(savedInstanceState.getString("lat"));
+            lon.setText(savedInstanceState.getString("lon"));
+
+            setStoreProgress(savedInstanceState.getInt("progress"));
+        }
 
         possiblyEnableStoreButton();
 
@@ -150,33 +160,40 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
 
     private void setStoreProgress(int percentage){
         //handle progress bar
-        if(percentage == 0) {
+        if(percentage < 0){
+            storeProgress.setAlpha(0.0f);
+            storeProgress.clearAnimation();
+        } else if(percentage == 0) {
             //no animation while resetting progress bar
             storeProgress.clearAnimation();
             storeProgress.setProgress(percentage);
             storeProgress.setAlpha(1.0f);
-        } else if (percentage == 100){
-            //fade out the progress bar
-            AlphaAnimation progressOpacityAnimation = new AlphaAnimation(1.0f, 0.0f);
-            progressOpacityAnimation.setDuration (1500);
-            progressOpacityAnimation.setFillAfter(true);
-            progressOpacityAnimation.setInterpolator (new DecelerateInterpolator());
-            storeProgress.startAnimation(progressOpacityAnimation);
         } else {
             ObjectAnimator progressAnimation = ObjectAnimator.ofInt(storeProgress, "progress", percentage);
             progressAnimation.setDuration(1500); //in milliseconds
             progressAnimation.setInterpolator(new DecelerateInterpolator());
             progressAnimation.start();
+
+            if (percentage == 100){
+                //fade out the progress bar
+                AlphaAnimation progressOpacityAnimation = new AlphaAnimation(1.0f, 0.0f);
+                progressOpacityAnimation.setDuration (1500);
+                progressOpacityAnimation.setFillAfter(true);
+                progressOpacityAnimation.setInterpolator (new DecelerateInterpolator());
+                storeProgress.startAnimation(progressOpacityAnimation);
+
+                percentage = -1;
+            }
         }
 
         //handle percentage indicator
         if(percentage == 0) {
             storePercentage.setText("0%");
-            oldPercentage = 0;
-        } else if (percentage == 100){
+            oldProgress = 0;
+        } else if (percentage == 100 || percentage < 0){
             storePercentage.setText("");
         } else {
-            ValueAnimator percentageAnimation = ValueAnimator.ofInt(oldPercentage, percentage);
+            ValueAnimator percentageAnimation = ValueAnimator.ofInt(oldProgress, percentage);
             percentageAnimation.setDuration(1500);
             percentageAnimation.setInterpolator(new DecelerateInterpolator());
             percentageAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
@@ -188,7 +205,19 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
             percentageAnimation.start();
         }
 
-        oldPercentage = percentage;
+        oldProgress = percentage;
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        //save current latitude, longitude
+        outState.putString("lat",lat.getText().toString());
+        outState.putString("lon",lon.getText().toString());
+
+        //save the progress bar and percentage state
+        outState.putInt("progress",oldProgress);
     }
 
     @Override
@@ -210,19 +239,44 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
             //handles the storing of the current wifi measurement
             Log.d(TAG, "Store button pressed!");
 
-            //reset the progress
-            setStoreProgress(0);
-
-            //refresh the altitude since it could be modified manually by the user
-            location.setAltitude(Double.valueOf(alt.getText().toString()));
-            String locationLabel = ((EditText) rootView.findViewById(R.id.location_label)).getText().toString();
-            Bundle b = new Bundle();
-            b.putString("current_location_label", locationLabel);
-            b.putParcelable("current_location", location);
-
-            //send request to the service
-            Utils.sendMessage(mFingerprintingService, WifiFingerprintingService.MSG_STORE_FINGERPRINT, b, null);
+            //If wifi disabled, ask the user to turn it on
+            final WifiManager manager = (WifiManager) getContext().getSystemService(Context.WIFI_SERVICE);
+            if (!manager.isWifiEnabled()) {
+                final AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+                builder.setMessage(getString(R.string.wifi_alert))
+                        .setCancelable(false)
+                        .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                            public void onClick(final DialogInterface dialog, final int id) {
+                                WifiManager wifiManager = (WifiManager)getContext().getSystemService(Context.WIFI_SERVICE);
+                                wifiManager.setWifiEnabled(true);
+                                startStoreProcedure();
+                            }
+                        })
+                        .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                            public void onClick(final DialogInterface dialog, final int id) {
+                                Toast.makeText(getContext(),getString(R.string.wifi_error),Toast.LENGTH_SHORT).show();
+                                dialog.cancel();
+                            }
+                        });
+                final AlertDialog alert = builder.create();
+                alert.show();
+            }
         }
+    }
+
+    private void startStoreProcedure(){
+        //reset the progress
+        setStoreProgress(0);
+
+        //refresh the altitude since it could be modified manually by the user
+        location.setAltitude(Double.valueOf(alt.getText().toString()));
+        String locationLabel = ((EditText) rootView.findViewById(R.id.location_label)).getText().toString();
+        Bundle b = new Bundle();
+        b.putString("current_location_label", locationLabel);
+        b.putParcelable("current_location", location);
+
+        //send request to the service
+        Utils.sendMessage(mFingerprintingService, WifiFingerprintingService.MSG_STORE_FINGERPRINT, b, null);
     }
 
     private void handleGpsCheckBox(){

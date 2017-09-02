@@ -12,9 +12,11 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.preference.PreferenceManager;
+import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -214,6 +216,16 @@ public class CalibrationActivity extends AppCompatActivity implements View.OnCli
         }
     }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                onBackPressed();
+                break;
+        }
+        return true;
+    }
+
     /**
      * Class for interacting with the main interface of the inertial navigation service.
      */
@@ -224,7 +236,7 @@ public class CalibrationActivity extends AppCompatActivity implements View.OnCli
             // interact with the service
             mInertialNavigationService = new Messenger(service);
             //sends an hello message so that the service knows who he is talking to
-            Utils.sendMessage(mInertialNavigationService, WifiFingerprintingService.MSG_HELLO_FROM_STORE_FRAGMENT, null, mMessenger);
+            Utils.sendMessage(mInertialNavigationService, InertialPedestrianNavigationService.MSG_HELLO_FROM_CALIBRATION_ACTIVITY, null, mMessenger);
         }
 
         public void onServiceDisconnected(ComponentName className) {
