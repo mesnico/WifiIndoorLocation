@@ -22,7 +22,7 @@
     <string name="similarity_filtering">Similarity Filtering</string>
     <string name="settings_distance_threshold">Distance Threshold</string>
     <string name="settings_nearest_neighbors">Number of Nearest-Neighbors</string>
-    <string name="settings_distance_threshold_summary">Only fingerprints having distance %s are used</string>
+    <string name="settings_distance_threshold_summary">Only fingerprints having distance less or equal to %s are used</string>
     <string name="nn_number_summary">Only the first %s fingerprints are used</string>
 
     <!-- Strings related to Location Storing Settings -->

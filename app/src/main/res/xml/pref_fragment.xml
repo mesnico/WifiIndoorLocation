@@ -20,7 +20,7 @@
 
         <com.unipi.nicola.indoorlocator.UI.CustomSummaryEditTextPreference
             android:defaultValue="40.0"
-            android:inputType="number"
+            android:inputType="numberDecimal"
             android:selectAllOnFocus="true"
             android:singleLine="true"
             android:title="@string/settings_distance_threshold"

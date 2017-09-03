@@ -30,6 +30,7 @@ public class FingerprintEuclidDistance extends FingerprintDistance {
         double sum = 0;
         int thisIndex = 0;
         int otherIndex = 0;
+        int numberOfTotalAPs = 0;
         /* Optimized comparison among two ordered lists, in order to compute the euclidean distance.
            The APs that are not common to both lists are assigned a signal equal to MIN_SIGNAL_LEVEL dB.
          */
@@ -61,6 +62,7 @@ public class FingerprintEuclidDistance extends FingerprintDistance {
                 );
                 otherIndex++;
             }
+            numberOfTotalAPs++;
         }
 
         //we must finish scanning the list not still completed
@@ -81,7 +83,11 @@ public class FingerprintEuclidDistance extends FingerprintDistance {
                     2
             );
             toCompleteIndex++;
+            numberOfTotalAPs++;
         }
+
+        //normalization due to variable vector lengths
+        sum /= numberOfTotalAPs;
 
         return Math.sqrt(sum);
     }

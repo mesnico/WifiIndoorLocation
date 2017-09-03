@@ -260,6 +260,9 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
                         });
                 final AlertDialog alert = builder.create();
                 alert.show();
+            } else {
+                //if wifi enabled, start the store procedure immediately
+                startStoreProcedure();
             }
         }
     }

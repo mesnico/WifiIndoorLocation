@@ -19,7 +19,7 @@ import static org.junit.Assert.*;
  * Created by Nicola on 12/05/2017.
  */
 public class WifiFingerprintTest {
-    FingerprintDistance stdEuclid = new FingerprintEuclidDistance(true);
+    FingerprintDistance stdEuclid = new FingerprintEuclidDistance(false);
 
     @Test
     public void ComputeDistance1() {
@@ -56,7 +56,7 @@ public class WifiFingerprintTest {
 
         double distance = stdEuclid.computeDistance(fp1, fp2);
 
-        assertEquals(10.0, distance, 0.001);
+        assertEquals(5.77350, distance, 0.001);
     }
 
     @Test
@@ -75,7 +75,7 @@ public class WifiFingerprintTest {
         WifiFingerprint fp2 = new WifiFingerprint(ap2, new Location("WifiLocator"), "stanza1");
 
         double distance = stdEuclid.computeDistance(fp1, fp2);
-        assertEquals(110.4536, distance, 0.001);
+        assertEquals(55.226805, distance, 0.001);
         //assertEquals(10.0, distance, 0.001);
     }
 
@@ -95,7 +95,7 @@ public class WifiFingerprintTest {
 
         double distance = stdEuclid.computeDistance(fp2, fp3);
 
-        assertEquals(113.137, distance, 0.001);
+        assertEquals(56.56854, distance, 0.001);
     }
 
     @Test
