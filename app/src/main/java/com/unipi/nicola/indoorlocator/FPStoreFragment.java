@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Point;
+import java.text.MessageFormat;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
@@ -62,6 +63,7 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
     private TextView lat;
     private TextView lon;
     private EditText alt;
+    private EditText locationLabel;
     private Button pickPlace;
     private Button store;
     private CheckBox gpsOn;
@@ -100,6 +102,8 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
         store.setOnClickListener(this);
         storeProgress = (ProgressBar) rootView.findViewById(R.id.store_progress);
         storePercentage = (TextView) rootView.findViewById(R.id.store_percentage);
+        locationLabel = ((EditText) rootView.findViewById(R.id.location_label));
+        locationLabel.addTextChangedListener(labelTextWatcher);
 
         //restore latitude, longitude values if the activity was rebuilt
         if(savedInstanceState != null){
@@ -122,6 +126,20 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
         public void onTextChanged(CharSequence s, int start, int before, int count) {
             possiblyEnableStoreButton();
             Log.d(TAG, "altitude changed!");
+        }
+
+        @Override
+        public void afterTextChanged(Editable s) {}
+    };
+
+    private final TextWatcher labelTextWatcher = new TextWatcher() {
+        @Override
+        public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+        @Override
+        public void onTextChanged(CharSequence s, int start, int before, int count) {
+            possiblyEnableStoreButton();
+            Log.d(TAG, "label changed!");
         }
 
         @Override
@@ -273,9 +291,8 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
 
         //refresh the altitude since it could be modified manually by the user
         location.setAltitude(Double.valueOf(alt.getText().toString()));
-        String locationLabel = ((EditText) rootView.findViewById(R.id.location_label)).getText().toString();
         Bundle b = new Bundle();
-        b.putString("current_location_label", locationLabel);
+        b.putString("current_location_label", locationLabel.getText().toString());
         b.putParcelable("current_location", location);
 
         //send request to the service
@@ -317,7 +334,7 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
 
     private void buildAlertMessageNoGps(){
         final AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-        builder.setMessage("Your GPS seems to be disabled, do you want to enable it?")
+        builder.setMessage(R.string.gps_disabled)
                 .setCancelable(false)
                 .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                     public void onClick(final DialogInterface dialog, final int id) {
@@ -338,7 +355,7 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
 
     private void possiblyEnableStoreButton(){
         //The store button can be enabled only if latitude, longitude and altitude have been set
-        if(lat.length()!=0 && lon.length()!=0 && alt.length()!=0){
+        if(lat.length()!=0 && lon.length()!=0 && alt.length()!=0 && locationLabel.length()!=0){
             store.setEnabled(true);
         } else {
             store.setEnabled(false);
@@ -353,7 +370,7 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
         alt.setText(String.valueOf(location.getAltitude()));
 
         //display the accuracy of the estimated location
-        accuracy.setText("Accuracy: "+location.getAccuracy()+"m");
+        accuracy.setText(MessageFormat.format(getString(R.string.accuracy), location.getAccuracy()));
 
         possiblyEnableStoreButton();
 
@@ -414,7 +431,7 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
                         WifiFingerprint storedFP = (WifiFingerprint)(b.getSerializable("aggregated_fp"));
                         //if no fingerprint was stored, display a warning toast
                         if(storedFP == null){
-                            Toast toast = Toast.makeText(getContext(), "No enough wifi APs around here!", Toast.LENGTH_LONG);
+                            Toast toast = Toast.makeText(getContext(), R.string.no_enough_aps_detected, Toast.LENGTH_LONG);
                             toast.show();
                         } else {
                             WifiLocatorActivity.showFingerprintApList(getActivity(), store, new Point(0, -80), storedFP);

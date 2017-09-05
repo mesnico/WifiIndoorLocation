@@ -48,6 +48,12 @@
     <string name="wifi_alert">Wifi is needed for this application to work. Do you want to enable it now?</string>
     <string name="wifi_error">Cannot continue if wifi is disabled</string>
     <string name="missing_sensors">There aren\'t the right sensors to perform inertial navigation. It will be disabled</string>
+    <string name="fp_deletion">Do you want to delete fingerprint {0}?</string>
+    <string name="no_aps_detected">No APs detected recently</string>
+    <string name="no_enough_aps_detected"></string>
+    <string name="no_saved_calibration">User defined</string>
+    <string name="gps_disabled">Your GPS seems to be disabled, do you want to enable it?</string>
+    <string name="accuracy">Accuracy: {0}m</string>
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>

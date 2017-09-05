@@ -157,7 +157,7 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
 
     private void updateCalibration(){
         CalibrationData cd = CalibrationUtils.getCalibrationInUse(getContext());
-        String currentCalibrationLabel = (cd == null) ? "Default" : cd.getLabel();
+        String currentCalibrationLabel = (cd == null) ? getString(R.string.no_saved_calibration) : cd.getLabel();
         calibrationLabel.setText(currentCalibrationLabel);
     }
 

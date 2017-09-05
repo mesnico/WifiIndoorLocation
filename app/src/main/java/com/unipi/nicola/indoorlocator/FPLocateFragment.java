@@ -27,6 +27,8 @@ import android.widget.Toast;
 import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprint;
 import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprintDBAdapter;
 
+import java.text.MessageFormat;
+
 /**
  * Created by Nicola on 08/06/2017.
  */
@@ -110,7 +112,7 @@ public class FPLocateFragment extends Fragment implements View.OnClickListener, 
         final WifiFingerprint selectedFP = (WifiFingerprint) parent.getItemAtPosition(position);
 
         final AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-        builder.setMessage("Do you want to delete fingerprint \""+selectedFP.getLocationLabel()+"\"?")
+        builder.setMessage(MessageFormat.format(getString(R.string.fp_deletion),selectedFP.getLocationLabel()))
                 .setCancelable(false)
                 .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                     public void onClick(final DialogInterface dialog, final int id) {
@@ -147,8 +149,7 @@ public class FPLocateFragment extends Fragment implements View.OnClickListener, 
                 WifiLocatorActivity.showFingerprintApList(getActivity(), v, new Point(0, 80), app.getCurrentFingerprint());
             } else {
                 //no current aps detected
-                String toastMsg = "No APs detected recently";
-                Toast.makeText(getContext(), toastMsg, Toast.LENGTH_LONG).show();
+                Toast.makeText(getContext(), R.string.no_aps_detected, Toast.LENGTH_LONG).show();
             }
         }
     }
