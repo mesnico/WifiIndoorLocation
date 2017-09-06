@@ -7,7 +7,9 @@ import android.location.Location;
 import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprint;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by Nicola on 09/06/2017.
@@ -21,6 +23,11 @@ public class IndoorLocatorApplication extends Application {
     private WifiFingerprint currentFingerprint;
     private Location estimatedLocation;
     private List<PointF> positionsList = new ArrayList<>();
+    private Set<ComparableLocation> visitedLocationsSet = new HashSet<>();
+
+    public Set<ComparableLocation> getVisitedLocationsSet() {
+        return visitedLocationsSet;
+    }
 
     public List<WifiFingerprint> getkBestFingerprints() {
         return kBestFingerprints;

@@ -34,12 +34,14 @@ public class WifiFingerprintingService extends Service {
     //maximum number of returned fingerprints after ordering
     static final int MAX_FINGERPRINTS = 10;
 
-    static final int MSG_HELLO_FROM_STORE_FRAGMENT =                                1;
-    static final int MSG_STORE_FINGERPRINT =                    2;
-    static final int MSG_PARAMETERS_CHANGED =                   3;
-    static final int MSG_LOCATE_ONOFF =                         4;
+    static final int MSG_RESET =            1;
+    static final int MSG_HELLO_FROM_STORE_FRAGMENT =            2;
+    static final int MSG_STORE_FINGERPRINT =                    3;
+    static final int MSG_PARAMETERS_CHANGED =                   4;
+    static final int MSG_LOCATE_ONOFF =                         5;
 
     private WifiManager wifi;
+    private IndoorLocatorApplication app;
 
     //DB adapter for the SQLite DB storing the fingerprints
     private WifiFingerprintDBAdapter dba;
@@ -86,6 +88,8 @@ public class WifiFingerprintingService extends Service {
 
         dba = new WifiFingerprintDBAdapter(this);
         dba.open(true);
+
+        app = (IndoorLocatorApplication) getApplication();
 
         //TODO: the database at the moment is in-memory, so at the startup the following entries are reentered, as of now. Instead, those values should be permanent and stored using the STORE functionality
         //inserts a fingerprint
@@ -204,20 +208,24 @@ public class WifiFingerprintingService extends Service {
             //computes the centroid using a filtered set of fingerprints, in order to estimate the location
             List<WifiFingerprint> filtered = stdEuclid.filterComputedNearestFingerprints(maximumDistance, numberOfNearestNeighbors);
 
-            IndoorLocatorApplication mApp = (IndoorLocatorApplication) getApplication();
             if(!filtered.isEmpty()) {
                 Location l = computeCentroid(filtered);
-                mApp.setEstimatedLocation(l);
+                app.setEstimatedLocation(l);
 
+                //if marker already added in this position the previous time, skip the insertion
+                ComparableLocation cl = new ComparableLocation(l);
+                if(!app.getVisitedLocationsSet().contains(cl)) {
+                    app.getVisitedLocationsSet().add(cl);
+                }
                 //notifies the application so that it can retrieve the new location
                 Intent broadcastIntent = new Intent();
                 broadcastIntent.setAction(IndoorLocatorApplication.LOCATION_ESTIMATION_READY);
                 sendBroadcast(broadcastIntent);
             }
 
-            mApp.setkBestFingerprints(orderedResults);
+            app.setkBestFingerprints(orderedResults);
             //set also the current sensed fingerprint
-            mApp.setCurrentFingerprint(currentMeasure);
+            app.setCurrentFingerprint(currentMeasure);
 
             //notifies the application so that it can retrieve the so built list of fingerprints
             Intent broadcastIntent = new Intent();
@@ -272,6 +280,13 @@ public class WifiFingerprintingService extends Service {
         public void handleMessage(Message msg) {
             Bundle b = msg.getData();
             switch (msg.what) {
+                case MSG_RESET:
+                    //resets the visited locations set
+                    app.getVisitedLocationsSet().clear();
+                    app.setEstimatedLocation(null);
+                    Log.d(TAG, "Visited locations set reset!");
+                    break;
+
                 case MSG_HELLO_FROM_STORE_FRAGMENT:
                     //store the interlocutor
                     mStoreFragment = msg.replyTo;

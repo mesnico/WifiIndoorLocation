@@ -6,9 +6,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.Color;
-import android.graphics.Point;
 import android.graphics.PointF;
-import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -35,13 +33,10 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
-import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprint;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * The fragment carrying the google map.
@@ -57,15 +52,19 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
     private GoogleMap gMap = null;
     private View rootView;
 
+    //when true, the current marker is zoomed.
+    private boolean updateZoom = true;
+
     /*
      * The messenger object that must be passed from the activity and that is needed in order for this fragment
      * to communicate with the Fingerprinting Service
      */
     private Messenger mInertialNavigationService;
+    private Messenger mFingerprintingService;
     private Messenger mMessenger = new Messenger(new FPMapFragment.IncomingHandler());
 
     //the current shown marker
-    private Marker currentMarker;
+    private List<Marker> markers = new ArrayList<>();
     //the current user path
     private Polyline userPath;
     private TextView calibrationLabel;
@@ -73,25 +72,9 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
     private TextView stepsCounter;
     int steps = 0;
 
-    private Context mContext;
+    int oldVisitedLocationSize = 0;
 
-    //set containing all the estimated locations visited so far. It is used in order to print once
-    //the marker on the map for every distinct estimated location
-    private static class ComparableLocation extends Location{
-        public ComparableLocation(Location l) {
-            super(l);
-        }
-        @Override
-        public boolean equals(Object o){
-            ComparableLocation cl = (ComparableLocation) o;
-            return cl.getExtras().getString("id").equals(this.getExtras().getString("id"));
-        }
-        @Override
-        public int hashCode() {
-            return this.getExtras().getString("id").hashCode();
-        }
-    }
-    private Set<ComparableLocation> estimatedLocationsSet = new HashSet<>();
+    private Context mContext;
 
     public FPMapFragment() {
         // Required empty public constructor
@@ -107,6 +90,7 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
     public void setArguments(Bundle b) {
         //get the messenger from the activity
         mInertialNavigationService = b.getParcelable("mInertialNavigationService");
+        mFingerprintingService = b.getParcelable("mFingerprintingService");
 
         //sends an hello message so that the service knows who he is talking to
         Utils.sendMessage(mInertialNavigationService, InertialPedestrianNavigationService.MSG_HELLO_FROM_MAP_FRAGMENT, null, mMessenger);
@@ -212,7 +196,8 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
         super.onResume();
         Log.d(TAG, "onResume called!");
 
-        displayMarkers();
+        updateZoom = true;
+        updateMarkers();
         displayPath();
         handleRealPositioningOn();
         updateCalibration();
@@ -236,7 +221,7 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
         //outside this method
         gMap = googleMap;
 
-        displayMarkers();
+        updateMarkers();
         displayPath();
         //handles the "my position" button
         handleRealPositioningOn();
@@ -249,10 +234,11 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
 
             //reset the view and all related data structures
             Utils.sendMessage(mInertialNavigationService,InertialPedestrianNavigationService.MSG_RESET, null, null);
-            estimatedLocationsSet.clear();
+            Utils.sendMessage(mFingerprintingService,WifiFingerprintingService.MSG_RESET, null, null);
             gMap.clear();
             userPath = null;
             steps = 0;
+            oldVisitedLocationSize = 0;
             updateSteps();
         } else if(v.getId() == R.id.calibration_label){
             //show the Calibration Activity
@@ -274,33 +260,44 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
         @Override
         public void onReceive(Context context, Intent intent) {
             Log.d(TAG, "new location estimation ready!");
-            displayMarkers();
+            updateMarkers();
         }
     };
 
-    private void displayMarkers(){
+    private void updateMarkers(){
         if(gMap != null && app.getEstimatedLocation()!=null){
-            //delete the previous marker, if one
-                /*if(currentMarker != null) {
-                    currentMarker.remove();
-                }*/
-            //if marker already added in this position the previous time, skip the insertion
-            ComparableLocation cl = new ComparableLocation(app.getEstimatedLocation());
-            if(!estimatedLocationsSet.contains(cl)) {
-                //add this cl to the set
-                estimatedLocationsSet.add(cl);
+            //only if the visited location set changed
+            if(app.getVisitedLocationsSet().size() != oldVisitedLocationSize) {
+                //resets the current markers
+                for (Marker m : markers) {
+                    m.remove();
+                }
+                markers.clear();
+                //add the markers
+                for (ComparableLocation l : app.getVisitedLocationsSet()) {
+                    //add a marker on the map corresponding to the estimated position
+                    double lat = l.getLatitude();
+                    double lon = l.getLongitude();
+                    LatLng newMarkerPos = new LatLng(lat, lon);
+                    //set marker position, icon and title
+                    MarkerOptions markerOpt = new MarkerOptions();
+                    markerOpt.position(newMarkerPos);
+                    markerOpt.icon(BitmapDescriptorFactory.fromResource(R.drawable.position_marker));
+                    markerOpt.title(l.getExtras().getString("location_labels"));
+                    Marker currentMarker = gMap.addMarker(markerOpt);
+                    markers.add(currentMarker);
+                }
+                //update oldVisitedLocationSize
+                oldVisitedLocationSize = app.getVisitedLocationsSet().size();
+            }
 
-                //add a marker on the map corresponding to the estimated position
-                double lat = app.getEstimatedLocation().getLatitude();
-                double lon = app.getEstimatedLocation().getLongitude();
-                LatLng newMarkerPos = new LatLng(lat, lon);
-                //set marker position, icon and title
-                MarkerOptions markerOpt = new MarkerOptions();
-                markerOpt.position(newMarkerPos);
-                markerOpt.icon(BitmapDescriptorFactory.fromResource(R.drawable.position_marker));
-                markerOpt.title(app.getEstimatedLocation().getExtras().getString("location_labels"));
-                currentMarker = gMap.addMarker(markerOpt);
-                gMap.moveCamera(CameraUpdateFactory.newLatLngZoom(newMarkerPos,20));
+            if(updateZoom) {
+                //move the camera to the latest added marker
+                LatLng latestMarkerPos = new LatLng(
+                        app.getEstimatedLocation().getLatitude(),
+                        app.getEstimatedLocation().getLongitude());
+                gMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latestMarkerPos, 20));
+                updateZoom = false;
             }
         }
     }
