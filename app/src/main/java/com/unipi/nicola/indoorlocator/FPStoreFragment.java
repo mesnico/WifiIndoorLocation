@@ -39,6 +39,7 @@ import com.google.android.gms.common.GooglePlayServicesRepairableException;
 import com.google.android.gms.location.places.Place;
 import com.google.android.gms.location.places.ui.PlacePicker;
 import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprint;
+import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprintingService;
 
 /**
  * Created by Nicola on 08/06/2017.
@@ -51,7 +52,7 @@ public class FPStoreFragment extends Fragment implements View.OnClickListener, L
     private String locationProvider;
     private static final int PLACE_PICKER_REQUEST = 1;
 
-    static final int MSG_NEXT_STORING_ITERATION =   1;  //TODO: here, listen for this message sent by the service
+    public static final int MSG_NEXT_STORING_ITERATION =   1;  //TODO: here, listen for this message sent by the service
 
     /*
      * The messenger object that must be passed from the activity and that is needed in order for this fragment

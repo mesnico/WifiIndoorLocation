@@ -1,4 +1,4 @@
-package com.unipi.nicola.indoorlocator;
+package com.unipi.nicola.indoorlocator.fingerprinting;
 
 import android.app.Service;
 import android.content.BroadcastReceiver;
@@ -16,6 +16,10 @@ import android.os.Messenger;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.unipi.nicola.indoorlocator.ComparableLocation;
+import com.unipi.nicola.indoorlocator.FPStoreFragment;
+import com.unipi.nicola.indoorlocator.IndoorLocatorApplication;
+import com.unipi.nicola.indoorlocator.Utils;
 import com.unipi.nicola.indoorlocator.fingerprinting.AccessPointInfos;
 import com.unipi.nicola.indoorlocator.fingerprinting.FingerprintDistance;
 import com.unipi.nicola.indoorlocator.fingerprinting.FingerprintEuclidDistance;
@@ -34,11 +38,11 @@ public class WifiFingerprintingService extends Service {
     //maximum number of returned fingerprints after ordering
     static final int MAX_FINGERPRINTS = 10;
 
-    static final int MSG_RESET =            1;
-    static final int MSG_HELLO_FROM_STORE_FRAGMENT =            2;
-    static final int MSG_STORE_FINGERPRINT =                    3;
-    static final int MSG_PARAMETERS_CHANGED =                   4;
-    static final int MSG_LOCATE_ONOFF =                         5;
+    public static final int MSG_RESET =            1;
+    public static final int MSG_HELLO_FROM_STORE_FRAGMENT =            2;
+    public static final int MSG_STORE_FINGERPRINT =                    3;
+    public static final int MSG_PARAMETERS_CHANGED =                   4;
+    public static final int MSG_LOCATE_ONOFF =                         5;
 
     private WifiManager wifi;
     private IndoorLocatorApplication app;

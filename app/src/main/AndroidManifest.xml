@@ -23,7 +23,7 @@
             android:value="AIzaSyAneyXW-EuRHf0knEwAOezUTSPTjYpIq-M" />
 
         <service
-            android:name=".WifiFingerprintingService"
+            android:name=".fingerprinting.WifiFingerprintingService"
             android:enabled="true"
             android:exported="true" />
 
@@ -54,7 +54,7 @@
         </activity>
 
         <service
-            android:name=".InertialPedestrianNavigationService"
+            android:name=".inertial.InertialPedestrianNavigationService"
             android:enabled="true"
             android:exported="true" />
     </application>

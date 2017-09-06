@@ -8,9 +8,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Point;
 import android.os.Bundle;
-import android.os.Message;
 import android.os.Messenger;
-import android.os.RemoteException;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -26,6 +24,7 @@ import android.widget.Toast;
 
 import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprint;
 import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprintDBAdapter;
+import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprintingService;
 
 import java.text.MessageFormat;
 

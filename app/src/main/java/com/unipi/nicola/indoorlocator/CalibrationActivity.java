@@ -6,13 +6,10 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
-import android.preference.PreferenceManager;
-import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -25,7 +22,9 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprintDBAdapter;
+import com.unipi.nicola.indoorlocator.inertial.CalibrationData;
+import com.unipi.nicola.indoorlocator.inertial.CalibrationUtils;
+import com.unipi.nicola.indoorlocator.inertial.InertialPedestrianNavigationService;
 
 public class CalibrationActivity extends AppCompatActivity implements View.OnClickListener, AdapterView.OnItemLongClickListener, AdapterView.OnItemClickListener{
     private static final String TAG = "CalibrationActivity";

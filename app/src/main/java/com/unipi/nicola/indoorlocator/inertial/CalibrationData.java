@@ -1,4 +1,4 @@
-package com.unipi.nicola.indoorlocator;
+package com.unipi.nicola.indoorlocator.inertial;
 
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;

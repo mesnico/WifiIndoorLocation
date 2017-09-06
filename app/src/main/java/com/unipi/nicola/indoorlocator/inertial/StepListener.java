@@ -1,4 +1,4 @@
-package com.unipi.nicola.indoorlocator;
+package com.unipi.nicola.indoorlocator.inertial;
 
 /*
  *  Pedometer - Android App

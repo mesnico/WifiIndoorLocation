@@ -33,6 +33,10 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprintingService;
+import com.unipi.nicola.indoorlocator.inertial.CalibrationData;
+import com.unipi.nicola.indoorlocator.inertial.CalibrationUtils;
+import com.unipi.nicola.indoorlocator.inertial.InertialPedestrianNavigationService;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -234,11 +238,12 @@ public class FPMapFragment extends Fragment implements OnMapReadyCallback, View.
 
             //reset the view and all related data structures
             Utils.sendMessage(mInertialNavigationService,InertialPedestrianNavigationService.MSG_RESET, null, null);
-            Utils.sendMessage(mFingerprintingService,WifiFingerprintingService.MSG_RESET, null, null);
+            Utils.sendMessage(mFingerprintingService, WifiFingerprintingService.MSG_RESET, null, null);
             gMap.clear();
             userPath = null;
             steps = 0;
             oldVisitedLocationSize = 0;
+            updateZoom = true;
             updateSteps();
         } else if(v.getId() == R.id.calibration_label){
             //show the Calibration Activity

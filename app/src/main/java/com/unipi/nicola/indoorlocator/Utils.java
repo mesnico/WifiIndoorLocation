@@ -16,7 +16,7 @@ public class Utils {
      * @param msgType the message
      * @param b bundle to send with the message
      */
-    static void sendMessage(Messenger to, int msgType, Bundle b, Messenger replyTo){
+    public static void sendMessage(Messenger to, int msgType, Bundle b, Messenger replyTo){
         Message msg = Message.obtain(null, msgType);
         if (b != null){
             msg.setData(b);

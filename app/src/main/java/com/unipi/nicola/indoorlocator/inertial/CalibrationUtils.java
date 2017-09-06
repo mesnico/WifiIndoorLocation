@@ -1,4 +1,4 @@
-package com.unipi.nicola.indoorlocator;
+package com.unipi.nicola.indoorlocator.inertial;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -7,12 +7,9 @@ import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.InstanceCreator;
 import com.google.gson.reflect.TypeToken;
 
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
-import org.apache.commons.math3.linear.MatrixUtils;
-import org.apache.commons.math3.linear.RealMatrix;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;

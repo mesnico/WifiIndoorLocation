@@ -13,23 +13,15 @@ import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.net.wifi.WifiManager;
 import android.os.IBinder;
-import android.os.Message;
 import android.os.Messenger;
-import android.os.RemoteException;
 import android.preference.PreferenceManager;
-import android.support.design.widget.TabLayout;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.FragmentTabHost;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
-import android.support.v4.view.ViewPager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
@@ -45,10 +37,11 @@ import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.TabHost;
 import android.widget.TabWidget;
-import android.widget.TableLayout;
 import android.widget.TextView;
 
 import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprint;
+import com.unipi.nicola.indoorlocator.fingerprinting.WifiFingerprintingService;
+import com.unipi.nicola.indoorlocator.inertial.InertialPedestrianNavigationService;
 
 public class WifiLocatorActivity extends AppCompatActivity implements TabHost.OnTabChangeListener{
     public static final String MAP_TAG = "Map";

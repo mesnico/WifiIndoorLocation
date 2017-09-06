@@ -1,4 +1,4 @@
-package com.unipi.nicola.indoorlocator;
+package com.unipi.nicola.indoorlocator.inertial;
 
 import android.app.Service;
 import android.content.BroadcastReceiver;
@@ -19,6 +19,11 @@ import android.os.Messenger;
 import android.os.PowerManager;
 import android.os.Vibrator;
 import android.util.Log;
+
+import com.unipi.nicola.indoorlocator.CalibrationActivity;
+import com.unipi.nicola.indoorlocator.FPMapFragment;
+import com.unipi.nicola.indoorlocator.IndoorLocatorApplication;
+import com.unipi.nicola.indoorlocator.Utils;
 
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.LUDecomposition;
