@@ -29,7 +29,7 @@
                 android:layout_height="wrap_content"
                 android:id="@+id/reset_path"
                 android:layout_weight="1"
-                android:drawableLeft="@drawable/cast_ic_notification_forward"
+                android:drawableLeft="@android:drawable/ic_popup_sync"
                 android:drawableTint="@color/cast_expanded_controller_background_color"
                 style="buttonStyle" />
 

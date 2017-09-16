@@ -9,4 +9,7 @@
     <color name="tabUnselected">#efefef</color>
     <color name="progressColor">#0000FF</color>
     <color name="validFingerprintColor">#FFFFFF</color>
+
+    <color name="cast_expanded_controller_background_color">#000000</color>
+    <color name="cast_intro_overlay_background_color">#CC000000</color>
 </resources>
